@@ -74,26 +74,27 @@ data EmployeeStatus =
  deriving (Eq, Show)
 
 registry =
-     funTo @Gen Company
-  +: funTo @Gen Department
-  +: funTo @Gen Employee
+     genFun Company
+  +: genFun Department
+  +: genFun Employee
   -- we can generate data for different constructors in an ADT
-  +: fun   genEmployeeStatus
-  +: funTo @Gen (tag @"permanent" Permanent)
-  +: funTo @Gen (tag @"temporary" Temporary)
+  +: fun genEmployeeStatus
+  +: funTo @GenIO (tag @"permanent" Permanent)
+  +: funTo @GenIO (tag @"temporary" Temporary)
   -- we can generate Lists or Maybe of elements
   +: fun (listOf @Department)
   +: fun (listOf @Employee)
   +: fun (maybeOf @Int)
-  +: fun genInt
-  +: fun genText
+  +: genVal genInt
+  +: genVal genText
+  +: funTo @GenIO choiceChooser
   +: end
 
 -- | We can also generate data for ADTs having several constructors by tagging
 --   the generators for each constructor.
 --   Then, here, we equally generate permanent and temp employees
-genEmployeeStatus :: Gen (Tag "permanent" EmployeeStatus) -> Gen (Tag "temporary" EmployeeStatus) -> Gen EmployeeStatus
-genEmployeeStatus g1 g2 = choice [unTag <$> g1, unTag <$> g2]
+genEmployeeStatus :: GenIO Chooser -> GenIO (Tag "permanent" EmployeeStatus) -> GenIO (Tag "temporary" EmployeeStatus) -> GenIO EmployeeStatus
+genEmployeeStatus chooser g1 g2 = chooseOne chooser [unTag <$> g1, unTag <$> g2]
 
 genInt :: Gen Int
 genInt = integral (linear 1 3)
@@ -111,7 +112,7 @@ generators = $(checkRegistry 'registry)
 
 -- | We create a forall function using all the generators
 forall :: forall a . _ => PropertyT IO a
-forall = withFrozenCallStack $ forAll (genWith @a generators)
+forall = withFrozenCallStack $ forAllT (genWith @a generators)
 
 -- Now we can write more properties!
 
@@ -140,15 +141,67 @@ test_small_company =
 --   generator in the context of a Gen Department
 
 genDepartmentName = T.take 5 . T.toUpper <$> genText
-setDepartmentName = modify (specialize @(Gen Department) genDepartmentName)
+setDepartmentName = specializeGenS @Department genDepartmentName
 
-test_with_better_department_name =
+test_with_better_department_name = noShrink $
   prop "a department must have a short capitalized name" $ runS generators $ do
-    setDepartmentName
     setSmallCompany
+    setDepartmentName
     company <- forallS @Company
 
     -- uncomment to print the department names and inspect them
     -- print company
     let Just d = head $ departments company
     (T.length (departmentName d) <= 5) === True
+
+-- * It would be also very nice to have stateful generation where we can cycle
+--   across different constructors for a given data type
+
+test_xxx = test "xxx" $ runS generators $ do
+  setCycleChooserS @EmployeeStatus
+  name1 <- forallS @EmployeeStatus
+  name2 <- forallS @EmployeeStatus
+  name3 <- forallS @EmployeeStatus
+  name4 <- forallS @EmployeeStatus
+  [name1, name2, name3, name4] === [Permanent, Temporary 1, Permanent, Temporary 1]
+
+
+{-
+
+distinct :: forall a m . (MonadIO m, Eq a) => Gen a -> m (Gen a)
+distinct g = do
+  as <- liftIO $ newIORef []
+  distinctFrom as g
+
+distinctFrom :: (MonadIO m, Eq a) => IORef [a] -> Gen a -> m (Gen a)
+distinctFrom ref gen = do
+  as <- liftIO $ readIORef ref
+  liftIO $
+    let
+      loop n =
+        if n <= 0 then
+          error "Hedgehog.Gen.sample: too many discards, could not generate a sample"
+        else do
+          seed <- Seed.random
+          case Gen.evalGen 30 seed gen of
+            Nothing ->
+              loop (n - 1)
+            Just a->
+              if not (elem a as) then do
+                liftIO $ writeIORef ref (a:as)
+                pure $ Tree.nodeValue a
+              else loop (n - 1)
+    in
+      loop (100 :: Int)
+
+
+-- toIdentityGen :: GenT IO a -> IO (Gen a)
+-- toIdentityGen (GenT g) = GenT $ \size seed -> do
+--   Tree Node a as <- g size seed
+--   pure $ (Node a (toIdentityGen . GenT <$> as))
+
+
+
+
+
+-}

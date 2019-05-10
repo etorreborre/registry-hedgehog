@@ -6,6 +6,7 @@ packages:
 extra-deps:
   - tasty-hedgehog-0.2.0.0
   - registry-0.1.4.0
+  - hedgehog-0.6.1
 
 flags: {}
 
