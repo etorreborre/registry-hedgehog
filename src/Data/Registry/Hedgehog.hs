@@ -2,16 +2,24 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 
 module Data.Registry.Hedgehog (
-  genFun
+  -- creation / tweaking functions
+  GenIO
+, Chooser (..)
+, genFun
 , genVal
 , genWith
 , tweakGen
 , tweakGenS
 , setGen
 , setGenS
-, forallS
+, specializeGen
+, specializeGenS
 , makeNonEmpty
 , makeNonEmptyS
+, forallS
+, forAllT -- re-export of forAllT for convenience purpose since we are working in GenIO
+
+-- combinators to compose different types of generators
 , pairOf
 , tripleOf
 , listOf
@@ -22,18 +30,25 @@ module Data.Registry.Hedgehog (
 , mapOf
 , nonEmptyMapOf
 , hashMapOf
-, forAllT
+
+-- cycling values
+, setCycleChooserS -- main function to use
 , cycleWith
 , setCycleChooser
-, setCycleChooserS
-, specializeGen
-, specializeGenS
-, sampleIO
-, GenIO
-, Chooser (..)
 , chooseOne
 , choiceChooser
 , cycleChooser
+
+-- making distinct values
+, setDistinctS    -- main function to use
+, setDistinctForS -- main function to use
+, distinct
+, distinctWith
+, setDistinct
+, setDistinctFor
+
+-- sampling for GenIO generators
+, sampleIO
 ) where
 
 import           Control.Monad.Morph
@@ -57,13 +72,16 @@ import           Prelude                      ((!!), show)
 import           Protolude                    as P
 
 
--- * COMBINATORS
+-- * CREATION / TWEAKING OF REGISTRY GENERATORS
 
+-- | All the generators we use are lifted into GenIO to allow some generators to be stateful
 type GenIO = GenT IO
 
+-- | Create a GenIO a for a given constructor of type a
 genFun :: forall a b . (ApplyVariadic GenIO a b, Typeable a, Typeable b) => a -> Typed b
 genFun = funTo @GenIO
 
+-- | Lift a Gen a into GenIO a to be added to a registry
 genVal :: forall a . (Typeable a) => Gen a -> Typed (GenIO a)
 genVal g = fun (Gen.lift g)
 
@@ -96,18 +114,7 @@ specializeGen = specialize @(GenIO a)
 specializeGenS :: forall a b m ins out . (Typeable a, Typeable b, Contains (GenIO a) out, MonadState (Registry ins out) m) => Gen b -> m ()
 specializeGenS g = modify (specializeGen @a @b (Gen.lift g))
 
--- | Cycle a specific datatype
-setCycleChooser :: forall a ins out . (Typeable a, Contains (GenIO a) out) => Registry ins out -> IO (Registry ins out)
-setCycleChooser r = do
-  c <- cycleChooser
-  pure $ specializeValTo @GenIO @(GenIO a) c r
 
--- | Set a specific generator on the registry the value of a generator in a given registry in a State monad
-setCycleChooserS :: forall a m ins out . (Typeable a, Contains (GenIO a) out, MonadState (Registry ins out) m, MonadIO m) => m ()
-setCycleChooserS = do
-  r <- get
-  r' <- liftIO $ setCycleChooser @a r
-  put r'
 
 -- | Get a value generated from one of the generators in the registry and modify the registry
 --   using a state monad
@@ -173,22 +180,30 @@ nonEmptyMapOf gk gv = do
   t <- listOf (pairOf gk gv)
   pure (Map.fromList (h : t))
 
--- * Choosing
+-- * STATEFUL GENERATORS
 
+-- * CHOOSING VALUES DETERMINISTICALLY
+
+-- | Given a choosing strategy pick a generator
+--   This is possibly a stateful operation
 chooseOne :: GenIO Chooser -> [GenIO a] -> GenIO a
 chooseOne chooser gs = do
   c <- chooser
-  g <- P.lift $ pickOne c gs
-  g
+  join $ P.lift $ pickOne c gs
 
+-- | Chooser for randomly selecting a generator
 choiceChooser :: Chooser
 choiceChooser = Chooser { chooserType = "choice", pickOne = pure . Gen.choice }
 
+-- | Chooser for deterministically choosing elements in a list
+--   by cycling over them, which requires to maintain some state about the last position
 cycleChooser :: IO Chooser
 cycleChooser = do
   ref <- newIORef 0
   pure $ Chooser { chooserType = "cycle", pickOne = cycleWith ref }
 
+-- | A "chooser" strategy
+--   The type can be used to debug specializations
 data Chooser = Chooser {
   chooserType :: Text
 , pickOne :: forall a . [GenIO a] -> IO (GenIO a)
@@ -196,14 +211,80 @@ data Chooser = Chooser {
 
 instance Show Chooser where
   show c = toS (chooserType c)
+
 -- | Cycle generators
 
+-- | Pick a generator in a list based on the previous position selected
 cycleWith :: (MonadIO m) => IORef Int -> [GenT m a] -> IO (GenT m a)
 cycleWith ref gs = do
   n <- readIORef ref
   writeIORef ref (if n == P.length gs - 1 then 0 else n + 1)
   pure (gs !! n)
 
+-- | Set a cycling chooser for a specific data type
+setCycleChooser :: forall a ins out . (Typeable a, Contains (GenIO a) out) => Registry ins out -> IO (Registry ins out)
+setCycleChooser r = do
+  c <- cycleChooser
+  pure $ specializeValTo @GenIO @(GenIO a) c r
+
+-- | Set a cycling chooser for a specific data type
+setCycleChooserS :: forall a m ins out . (Typeable a, Contains (GenIO a) out, MonadState (Registry ins out) m, MonadIO m) => m ()
+setCycleChooserS = do
+  r <- get
+  r' <- liftIO $ setCycleChooser @a r
+  put r'
+
+-- * MAKING DISTINCT VALUES
+
+-- | Generate distinct values for a specific data type
+setDistinct :: forall a ins out . (Eq a, Typeable a, Contains (GenIO a) out) => Registry ins out -> IO (Registry ins out)
+setDistinct r = do
+  ref <- newIORef []
+  let g = makeFast @(GenIO a) r
+  g' <- distinctWith ref g
+  pure $ setGen g' r
+
+-- | Generate distinct values for a specific data type
+setDistinctS :: forall a m ins out . (Eq a, Typeable a, Contains (GenIO a) out, MonadState (Registry ins out) m, MonadIO m) => m ()
+setDistinctS = do
+  r <- get
+  r' <- liftIO $ setDistinct @a r
+  put r'
+
+-- | Generate distinct values for a specific data type, when used inside another data type
+setDistinctFor :: forall a b ins out . (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out) => Registry ins out -> IO (Registry ins out)
+setDistinctFor r = do
+  ref <- newIORef []
+  let g = makeFast @(GenIO b) r
+  g' <- distinctWith ref g
+  pure $ specializeGen @a g' r
+
+-- | Generate distinct values for a specific data type, when used inside another data type
+setDistinctForS :: forall a b m ins out . (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out, MonadState (Registry ins out) m, MonadIO m) => m ()
+setDistinctForS = do
+  r <- get
+  r' <- liftIO $ setDistinctFor @a @b r
+  put r'
+
+-- | Create a generator for distinct values
+--   This is a stateful operation
+distinct :: (MonadIO m, Eq a) => GenT m a -> IO (GenT m a)
+distinct g = do
+  ref <- newIORef []
+  distinctWith ref g
+
+-- | Generate distinct values based on the values already generated
+distinctWith :: (MonadIO m, Eq a) => IORef [a] -> GenT m a -> IO (GenT m a)
+distinctWith ref g = do
+  as <- readIORef ref
+  pure . GenT $ \size seed -> do
+    a <- runGenT size seed $ (Gen.filter (not . flip elem as)) g
+    liftIO $ writeIORef ref (a:as)
+    pure a
+
+-- * UTILITIES
+
+-- | Sample GenIO values
 sampleIO :: GenIO a -> IO a
 sampleIO gen =
     let
@@ -221,8 +302,7 @@ sampleIO gen =
     in
       loop (100 :: Int)
 
--- | Runs a generator, producing its shrink tree.
---
+-- | Runs a generator in IO, to get a value
 evalGenIO :: Size -> Seed -> GenIO a -> IO (Maybe a)
 evalGenIO size seed g = do
   r <- runMaybeT . runTree $ runGenT size seed g

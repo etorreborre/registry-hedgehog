@@ -7,15 +7,15 @@
 
 module Test.Data.Registry.HedgehogSpec where
 
+import           Data.List                     (nub)
 import           Data.Registry
 import           Data.Registry.Hedgehog
-import           Data.Registry.TH
-import qualified Data.Text                 as T (length, take, toUpper)
-import           Hedgehog.Gen              as Gen hiding (lift, print)
-import           Hedgehog.Internal.Gen     hiding (print, lift)
+import qualified Data.Text                     as T (length, take, toUpper)
+import           Hedgehog.Internal.Gen         hiding (lift, print)
 import           Hedgehog.Range
-import           Protolude                 hiding (list)
-import           Test.Tasty.Hedgehogx      hiding (lift)
+import           Protolude                     hiding (list)
+import           Test.Data.Registry.Generators
+import           Test.Tasty.Hedgehogx          hiding (lift)
 
 -- * This specification shows the usage of several features of this library
 --   First of all you will notice that if you run `stack test`
@@ -47,74 +47,7 @@ test_a_property_with_a_seed = withSeed "(Size 51) (Seed 35539461314630919 502910
     n <- forAll (integral (linear 1 3))
     (n >= 1) === True
 
--- * WORKING WITH GENERATORS
-
--- Some complex nested data
-data Company = Company {
-  companyName :: Text
-, departments :: [Department]
-} deriving (Eq, Show)
-
-data Department = Department {
-  departmentName :: Text
-, employees      :: [Employee]
-} deriving (Eq, Show)
-
-data Employee = Employee {
-  employeeName   :: Text
-, employeeStatus :: EmployeeStatus
-, salary         :: Int
-, bonus          :: Maybe Int
-} deriving (Eq, Show)
-
--- | Note that this is an ADT with several constructors
-data EmployeeStatus =
-   Permanent
- | Temporary Int -- number of days
- deriving (Eq, Show)
-
-registry =
-     genFun Company
-  +: genFun Department
-  +: genFun Employee
-  -- we can generate data for different constructors in an ADT
-  +: fun genEmployeeStatus
-  +: funTo @GenIO (tag @"permanent" Permanent)
-  +: funTo @GenIO (tag @"temporary" Temporary)
-  -- we can generate Lists or Maybe of elements
-  +: fun (listOf @Department)
-  +: fun (listOf @Employee)
-  +: fun (maybeOf @Int)
-  +: genVal genInt
-  +: genVal genText
-  +: funTo @GenIO choiceChooser
-  +: end
-
--- | We can also generate data for ADTs having several constructors by tagging
---   the generators for each constructor.
---   Then, here, we equally generate permanent and temp employees
-genEmployeeStatus :: GenIO Chooser -> GenIO (Tag "permanent" EmployeeStatus) -> GenIO (Tag "temporary" EmployeeStatus) -> GenIO EmployeeStatus
-genEmployeeStatus chooser g1 g2 = chooseOne chooser [unTag <$> g1, unTag <$> g2]
-
-genInt :: Gen Int
-genInt = integral (linear 1 3)
-
-genText :: Gen Text
-genText = text (linear 1 10) alpha
-
--- we need this if the registry and the TH check are done in the same file
--- See the gory details of why this is necessary: https://gitlab.haskell.org/ghc/ghc/issues/9813
-$(return [])
-
--- | Check that the registry is complete. This speeds up compilation when there are lots of generators
-generators :: Registry _ _
-generators = $(checkRegistry 'registry)
-
--- | We create a forall function using all the generators
-forall :: forall a . _ => PropertyT IO a
-forall = withFrozenCallStack $ forAllT (genWith @a generators)
-
--- Now we can write more properties!
+-- * USING GENERATORS
 
 test_company_1 =
   prop "a company can be used for testing" $ do
@@ -157,51 +90,26 @@ test_with_better_department_name = noShrink $
 -- * It would be also very nice to have stateful generation where we can cycle
 --   across different constructors for a given data type
 
-test_xxx = test "xxx" $ runS generators $ do
-  setCycleChooserS @EmployeeStatus
-  name1 <- forallS @EmployeeStatus
-  name2 <- forallS @EmployeeStatus
-  name3 <- forallS @EmployeeStatus
-  name4 <- forallS @EmployeeStatus
-  [name1, name2, name3, name4] === [Permanent, Temporary 1, Permanent, Temporary 1]
+test_cycle_constructors =
+  test "we can cycle deterministically across all the constructors of a data type" $ runS generators $ do
+   setCycleChooserS @EmployeeStatus
 
+   name1 <- forallS @EmployeeStatus
+   name2 <- forallS @EmployeeStatus
+   name3 <- forallS @EmployeeStatus
+   name4 <- forallS @EmployeeStatus
 
-{-
+   [name1, name2, name3, name4] === [Permanent, Temporary 1, Permanent, Temporary 1]
 
-distinct :: forall a m . (MonadIO m, Eq a) => Gen a -> m (Gen a)
-distinct g = do
-  as <- liftIO $ newIORef []
-  distinctFrom as g
+-- We can also make sure we generate distinct values for a given type
+test_distinct_values =
+  test "we can generate distinct values for a given data type when used in a specific context" $ runS generators $ do
+   setDistinctForS @Department @Text
 
-distinctFrom :: (MonadIO m, Eq a) => IORef [a] -> Gen a -> m (Gen a)
-distinctFrom ref gen = do
-  as <- liftIO $ readIORef ref
-  liftIO $
-    let
-      loop n =
-        if n <= 0 then
-          error "Hedgehog.Gen.sample: too many discards, could not generate a sample"
-        else do
-          seed <- Seed.random
-          case Gen.evalGen 30 seed gen of
-            Nothing ->
-              loop (n - 1)
-            Just a->
-              if not (elem a as) then do
-                liftIO $ writeIORef ref (a:as)
-                pure $ Tree.nodeValue a
-              else loop (n - 1)
-    in
-      loop (100 :: Int)
+   d1 <- forallS @Department
+   d2 <- forallS @Department
+   d3 <- forallS @Department
+   d4 <- forallS @Department
 
-
--- toIdentityGen :: GenT IO a -> IO (Gen a)
--- toIdentityGen (GenT g) = GenT $ \size seed -> do
---   Tree Node a as <- g size seed
---   pure $ (Node a (toIdentityGen . GenT <$> as))
-
-
-
-
-
--}
+   let names = fmap departmentName [d1, d2, d3, d4]
+   names === nub names

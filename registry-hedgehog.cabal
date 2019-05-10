@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e70b49b62de5939af85c7f62b384bf0826936efac5443bbe10dd1f1227a9dbeb
+-- hash: 89eede3b6a1ede665f0442d64d9c341c2d087d9a5ee713c92b398b2e7ff72084
 
 name:           registry-hedgehog
 version:        0.1.0.0
@@ -34,6 +34,7 @@ library
       base >=4.7 && <5
     , containers >=0.2 && <1
     , hedgehog >=0.6 && <1
+    , mmorph >=1 && <2
     , multimap >=1 && <2
     , protolude >=0.2 && <0.3
     , registry >=0.1.4 && <2
@@ -42,6 +43,7 @@ library
     , tasty-hedgehog >=0.1 && <1
     , tasty-th >=0.1 && <1
     , text >=1 && <2
+    , transformers >=0.5 && <2
     , universum >=1 && <2
     , unordered-containers >=0.1 && <1
   default-language: Haskell2010
@@ -51,6 +53,7 @@ test-suite spec
   main-is: test.hs
   other-modules:
       AutoDiscoveredSpecs
+      Test.Data.Registry.Generators
       Test.Data.Registry.HedgehogSpec
       Paths_registry_hedgehog
   hs-source-dirs:
