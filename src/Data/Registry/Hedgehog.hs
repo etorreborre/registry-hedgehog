@@ -26,6 +26,7 @@ module Data.Registry.Hedgehog (
 , listOfMinMax
 , nonEmptyOf
 , maybeOf
+, eitherOf
 , setOf
 , mapOf
 , nonEmptyMapOf
@@ -160,6 +161,10 @@ nonEmptyOf = Gen.nonEmpty (linear 1 3)
 -- | Create a default generator for a Maybe, choosing evenly between Nothing and Just
 maybeOf :: forall a . GenIO a -> GenIO (Maybe a)
 maybeOf genA = choice [pure Nothing, Just <$> genA]
+
+-- | Create a default generator for a Either, choosing evenly between Left and Right
+eitherOf :: forall a b . GenIO a -> GenIO b -> GenIO (Either a b)
+eitherOf genA genB = choice [Left <$> genA, Right <$> genB]
 
 -- | Create a default generator for a small set of elements
 setOf :: forall a . (Ord a) => GenIO a -> GenIO (Set a)
