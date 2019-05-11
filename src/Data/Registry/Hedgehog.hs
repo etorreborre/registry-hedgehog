@@ -33,50 +33,40 @@ module Data.Registry.Hedgehog (
 , hashMapOf
 
 -- cycling values
-, setCycleChooserS -- main function to use
-, cycleWith
+, setCycleChooserS
 , setCycleChooser
-, chooseOne
 , choiceChooser
-, cycleChooser
+, chooseOne
 
 -- making distinct values
-, setDistinctS    -- main function to use
-, setDistinctForS -- main function to use
-, distinct
-, distinctWith
+, setDistinctS
+, setDistinctForS
 , setDistinct
 , setDistinctFor
+, distinct
 
 -- sampling for GenIO generators
 , sampleIO
 ) where
 
 import           Control.Monad.Morph
-import           Control.Monad.Trans.Maybe
-import           Data.HashMap.Strict          as HashMap (HashMap, fromList)
+import           Data.HashMap.Strict             as HashMap (HashMap, fromList)
 import           Data.IORef
-import           Data.List.NonEmpty           hiding (cycle, nonEmpty, (!!))
-import           Data.Map                     as Map (fromList)
-import           Data.Maybe                   as Maybe
+import           Data.List.NonEmpty              hiding (cycle, nonEmpty, (!!))
+import           Data.Map                        as Map (fromList)
+import           Data.Maybe                      as Maybe
 import           Data.Registry
+import           Data.Registry.Internal.Hedgehog
 import           Data.Registry.Internal.Types
-import           Data.Set                     as Set (fromList)
+import           Data.Set                        as Set (fromList)
 import           Hedgehog
-import           Hedgehog.Gen                 as Gen
-import           Hedgehog.Internal.Gen        as Gen
-import           Hedgehog.Internal.Property   (forAllT)
-import           Hedgehog.Internal.Seed       as Seed (random)
-import           Hedgehog.Internal.Tree       as Tree (Node (..), Tree (..))
+import           Hedgehog.Gen                    as Gen
+import           Hedgehog.Internal.Property      (forAllT)
 import           Hedgehog.Range
-import           Prelude                      ((!!), show)
-import           Protolude                    as P
+import           Protolude                       as P
 
 
 -- * CREATION / TWEAKING OF REGISTRY GENERATORS
-
--- | All the generators we use are lifted into GenIO to allow some generators to be stateful
-type GenIO = GenT IO
 
 -- | Create a GenIO a for a given constructor of type a
 genFun :: forall a b . (ApplyVariadic GenIO a b, Typeable a, Typeable b) => a -> Typed b
@@ -114,8 +104,6 @@ specializeGen = specialize @(GenIO a)
 -- | Specialize a generator in a given context
 specializeGenS :: forall a b m ins out . (Typeable a, Typeable b, Contains (GenIO a) out, MonadState (Registry ins out) m) => Gen b -> m ()
 specializeGenS g = modify (specializeGen @a @b (Gen.lift g))
-
-
 
 -- | Get a value generated from one of the generators in the registry and modify the registry
 --   using a state monad
@@ -189,43 +177,6 @@ nonEmptyMapOf gk gv = do
 
 -- * CHOOSING VALUES DETERMINISTICALLY
 
--- | Given a choosing strategy pick a generator
---   This is possibly a stateful operation
-chooseOne :: GenIO Chooser -> [GenIO a] -> GenIO a
-chooseOne chooser gs = do
-  c <- chooser
-  join $ P.lift $ pickOne c gs
-
--- | Chooser for randomly selecting a generator
-choiceChooser :: Chooser
-choiceChooser = Chooser { chooserType = "choice", pickOne = pure . Gen.choice }
-
--- | Chooser for deterministically choosing elements in a list
---   by cycling over them, which requires to maintain some state about the last position
-cycleChooser :: IO Chooser
-cycleChooser = do
-  ref <- newIORef 0
-  pure $ Chooser { chooserType = "cycle", pickOne = cycleWith ref }
-
--- | A "chooser" strategy
---   The type can be used to debug specializations
-data Chooser = Chooser {
-  chooserType :: Text
-, pickOne :: forall a . [GenIO a] -> IO (GenIO a)
-}
-
-instance Show Chooser where
-  show c = toS (chooserType c)
-
--- | Cycle generators
-
--- | Pick a generator in a list based on the previous position selected
-cycleWith :: (MonadIO m) => IORef Int -> [GenT m a] -> IO (GenT m a)
-cycleWith ref gs = do
-  n <- readIORef ref
-  writeIORef ref (if n == P.length gs - 1 then 0 else n + 1)
-  pure (gs !! n)
-
 -- | Set a cycling chooser for a specific data type
 setCycleChooser :: forall a ins out . (Typeable a, Contains (GenIO a) out) => Registry ins out -> IO (Registry ins out)
 setCycleChooser r = do
@@ -270,47 +221,3 @@ setDistinctForS = do
   r <- get
   r' <- liftIO $ setDistinctFor @a @b r
   put r'
-
--- | Create a generator for distinct values
---   This is a stateful operation
-distinct :: (MonadIO m, Eq a) => GenT m a -> IO (GenT m a)
-distinct g = do
-  ref <- newIORef []
-  distinctWith ref g
-
--- | Generate distinct values based on the values already generated
-distinctWith :: (MonadIO m, Eq a) => IORef [a] -> GenT m a -> IO (GenT m a)
-distinctWith ref g = do
-  as <- readIORef ref
-  pure . GenT $ \size seed -> do
-    a <- runGenT size seed $ (Gen.filter (not . flip elem as)) g
-    liftIO $ writeIORef ref (a:as)
-    pure a
-
--- * UTILITIES
-
--- | Sample GenIO values
-sampleIO :: GenIO a -> IO a
-sampleIO gen =
-    let
-      loop n =
-        if n <= 0 then
-          panic "Hedgehog.Gen.sample: too many discards, could not generate a sample"
-        else do
-          seed <- Seed.random
-          r <- evalGenIO 30 seed gen
-          case r of
-            Nothing ->
-              loop (n - 1)
-            Just a ->
-              pure a
-    in
-      loop (100 :: Int)
-
--- | Runs a generator in IO, to get a value
-evalGenIO :: Size -> Seed -> GenIO a -> IO (Maybe a)
-evalGenIO size seed g = do
-  r <- runMaybeT . runTree $ runGenT size seed g
-  pure $ case r of
-    Nothing         -> Nothing
-    Just (Node a _) -> Just a
