@@ -90,26 +90,19 @@ test_with_better_department_name = noShrink $
 -- * It would be also very nice to have stateful generation where we can cycle
 --   across different constructors for a given data type
 
-test_cycle_constructors =
-  test "we can cycle deterministically across all the constructors of a data type" $ runS generators $ do
-   setCycleChooserS @EmployeeStatus
+test_cycle_constructors = noShrink $
+  prop "we can cycle deterministically across all the constructors of a data type" $ runS generators $ do
+    setGenS @Int (pure 1)
+    setCycleChooserS @EmployeeStatus
 
-   name1 <- forallS @EmployeeStatus
-   name2 <- forallS @EmployeeStatus
-   name3 <- forallS @EmployeeStatus
-   name4 <- forallS @EmployeeStatus
-
-   [name1, name2, name3, name4] === [Permanent, Temporary 1, Permanent, Temporary 1]
+    names <- replicateM 10 (forallS @EmployeeStatus)
+    names === take 10 (join $ repeat [Permanent, Temporary 1])
 
 -- We can also make sure we generate distinct values for a given type
 test_distinct_values =
-  test "we can generate distinct values for a given data type when used in a specific context" $ runS generators $ do
+  prop "we can generate distinct values for a given data type when used in a specific context" $ runS generators $ do
    setDistinctForS @Department @Text
 
-   d1 <- forallS @Department
-   d2 <- forallS @Department
-   d3 <- forallS @Department
-   d4 <- forallS @Department
-
-   let names = fmap departmentName [d1, d2, d3, d4]
+   departments <- replicateM 10 (forallS @Department)
+   let names = departmentName <$> departments
    names === nub names

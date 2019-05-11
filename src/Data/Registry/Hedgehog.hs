@@ -197,8 +197,7 @@ setDistinct :: forall a ins out . (Eq a, Typeable a, Contains (GenIO a) out) => 
 setDistinct r = do
   ref <- newIORef []
   let g = makeFast @(GenIO a) r
-  g' <- distinctWith ref g
-  pure $ setGen g' r
+  pure $ setGen (distinctWith ref g) r
 
 -- | Generate distinct values for a specific data type
 setDistinctS :: forall a m ins out . (Eq a, Typeable a, Contains (GenIO a) out, MonadState (Registry ins out) m, MonadIO m) => m ()
@@ -212,8 +211,7 @@ setDistinctFor :: forall a b ins out . (Typeable a, Contains (GenIO a) out, Eq b
 setDistinctFor r = do
   ref <- newIORef []
   let g = makeFast @(GenIO b) r
-  g' <- distinctWith ref g
-  pure $ specializeGen @a g' r
+  pure $ specializeGen @a (distinctWith ref g) r
 
 -- | Generate distinct values for a specific data type, when used inside another data type
 setDistinctForS :: forall a b m ins out . (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out, MonadState (Registry ins out) m, MonadIO m) => m ()

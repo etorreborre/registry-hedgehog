@@ -21,14 +21,14 @@ module Data.Registry.Internal.Hedgehog (
 
 import           Control.Monad.Trans.Maybe
 import           Data.IORef
-import           Data.Maybe                   as Maybe
+import           Data.Maybe                as Maybe
 import           Hedgehog
-import           Hedgehog.Gen                 as Gen
-import           Hedgehog.Internal.Gen        as Gen
-import           Hedgehog.Internal.Seed       as Seed (random)
-import           Hedgehog.Internal.Tree       as Tree (Node (..), Tree (..))
-import           Prelude                      ((!!), show)
-import           Protolude                    as P
+import           Hedgehog.Gen              as Gen
+import           Hedgehog.Internal.Gen     as Gen
+import           Hedgehog.Internal.Seed    as Seed (random)
+import           Hedgehog.Internal.Tree    as Tree (Node (..), Tree (..))
+import           Prelude                   (show, (!!))
+import           Protolude                 as P
 
 -- | All the generators we use are lifted into GenIO to allow some generators to be stateful
 type GenIO = GenT IO
@@ -57,7 +57,7 @@ cycleChooser = do
 --   The type can be used to debug specializations
 data Chooser = Chooser {
   chooserType :: Text
-, pickOne :: forall a . [GenIO a] -> IO (GenIO a)
+, pickOne     :: forall a . [GenIO a] -> IO (GenIO a)
 }
 
 instance Show Chooser where
@@ -67,8 +67,10 @@ instance Show Chooser where
 cycleWith :: (MonadIO m) => IORef Int -> [GenT m a] -> IO (GenT m a)
 cycleWith ref gs = do
   n <- readIORef ref
-  writeIORef ref (if n == P.length gs - 1 then 0 else n + 1)
+  modifyIORef ref increment
   pure (gs !! n)
+
+  where increment i = if i == P.length gs - 1 then 0 else i + 1
 
 -- * MAKING DISTINCT VALUES
 
@@ -77,16 +79,15 @@ cycleWith ref gs = do
 distinct :: (MonadIO m, Eq a) => GenT m a -> IO (GenT m a)
 distinct g = do
   ref <- newIORef []
-  distinctWith ref g
+  pure $ distinctWith ref g
 
 -- | Generate distinct values based on the values already generated
-distinctWith :: (MonadIO m, Eq a) => IORef [a] -> GenT m a -> IO (GenT m a)
-distinctWith ref g = do
-  as <- readIORef ref
-  pure . GenT $ \size seed -> do
-    a <- runGenT size seed $ (Gen.filter (not . flip elem as)) g
-    liftIO $ writeIORef ref (a:as)
-    pure a
+distinctWith :: (MonadIO m, Eq a) => IORef [a] -> GenT m a -> GenT m a
+distinctWith ref g = GenT $ \size seed -> do
+  as <- liftIO $ readIORef ref
+  a <- runGenT size seed $ (Gen.filter (not . flip elem as)) g
+  liftIO $ writeIORef ref (a:as)
+  pure a
 
 -- * UTILITIES
 
