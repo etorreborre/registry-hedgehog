@@ -75,9 +75,18 @@ assembleGeneratorsToRegistry _ [] =
   fail "generators creation failed"
 
 assembleGeneratorsToRegistry selectorGenerator [g] =
-  infixE (Just (appE (varE (mkName "genFun")) (pure g))) (varE (mkName "<:"))
-    (Just (appE (varE (mkName "fun")) (pure selectorGenerator)))
+  let r = appendExpressions (genFunOf (pure g)) (funOf (pure selectorGenerator))
+  in  appendExpressions r (genFunOf (varE (mkName "choiceChooser")))
 
 assembleGeneratorsToRegistry selectorGenerator (g:gs) =
-  infixE (Just (appE (varE (mkName "genFun")) (pure g))) (varE (mkName "<:"))
-    (Just $ assembleGeneratorsToRegistry selectorGenerator gs)
+  appendExpressions (genFunOf (pure g)) (assembleGeneratorsToRegistry selectorGenerator gs)
+
+appendExpressions :: ExpQ -> ExpQ -> ExpQ
+appendExpressions e1 e2 =
+  infixE (Just e1) (varE (mkName "<:")) (Just e2)
+
+genFunOf :: ExpQ -> ExpQ
+genFunOf = appE (varE (mkName "genFun"))
+
+funOf :: ExpQ -> ExpQ
+funOf = appE (varE (mkName "fun"))

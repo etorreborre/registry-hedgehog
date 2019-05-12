@@ -22,7 +22,7 @@ registry =
     genFun Company
  <: genFun Department
  <: genFun Employee
- -- we can generate data for different constructors in an ADT
+ -- we can generate data for different constructors in an ADT with some Template Haskell
  <: $(makeGenerators ''EmployeeStatus)
  -- we can generate Lists or Maybe of elements
  <: fun (listOf @Department)
@@ -30,8 +30,6 @@ registry =
  <: fun (maybeOf @Int)
  <: genVal genInt
  <: genVal genText
- -- the default chooser for selecting generators
- <: genFun choiceChooser
 
 genInt :: Gen Int
 genInt = integral (linear 1 3)
