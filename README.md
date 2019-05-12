@@ -1,4 +1,4 @@
-# `registry-hedgehog
+# `registry-hedgehog`
 
 ##### *It's functions all the way down* <img src="doc/images/unboxed-bottomup.jpg" border="0"/>
 
