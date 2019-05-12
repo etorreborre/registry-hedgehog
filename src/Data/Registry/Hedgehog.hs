@@ -13,8 +13,10 @@ module Data.Registry.Hedgehog (
 , tweakGen
 , tweakGenS
 , setGen
+, setGenIO
 , setGenS
 , specializeGen
+, specializeGenIO
 , specializeGenS
 , makeNonEmpty
 , makeNonEmptyS
@@ -92,20 +94,27 @@ tweakGenS :: forall a m ins out . (Typeable a, MonadState (Registry ins out) m) 
 tweakGenS f = modify (tweakGen f)
 
 -- | Set a specific generator on the registry the value of a generator in a given registry
-setGen :: forall a ins out . (Typeable a) => GenIO a -> Registry ins out -> Registry ins out
-setGen genA = tweakUnsafe @(GenIO a) (const genA)
+setGen :: forall a ins out . (Typeable a) => Gen a -> Registry ins out -> Registry ins out
+setGen = setGenIO . Gen.lift
+
+setGenIO :: forall a ins out . (Typeable a) => GenIO a -> Registry ins out -> Registry ins out
+setGenIO genA = tweakUnsafe @(GenIO a) (const genA)
 
 -- | Set a specific generator on the registry the value of a generator in a given registry in a State monad
-setGenS :: forall a m ins out . (Typeable a, MonadState (Registry ins out) m) => GenIO a -> m ()
+setGenS :: forall a m ins out . (Typeable a, MonadState (Registry ins out) m) => Gen a -> m ()
 setGenS genA = modify (setGen genA)
 
 -- | Specialize a generator in a given context
-specializeGen :: forall a b ins out . (Typeable a, Typeable b, Contains (GenIO a) out) => GenIO b -> Registry ins out -> Registry ins out
-specializeGen = specialize @(GenIO a)
+specializeGen :: forall a b ins out . (Typeable a, Typeable b, Contains (GenIO a) out) => Gen b -> Registry ins out -> Registry ins out
+specializeGen g = specializeGenIO @a (Gen.lift g)
+
+-- | Specialize a generator in a given context
+specializeGenIO :: forall a b ins out . (Typeable a, Typeable b, Contains (GenIO a) out) => GenIO b -> Registry ins out -> Registry ins out
+specializeGenIO = specialize @(GenIO a)
 
 -- | Specialize a generator in a given context
 specializeGenS :: forall a b m ins out . (Typeable a, Typeable b, Contains (GenIO a) out, MonadState (Registry ins out) m) => Gen b -> m ()
-specializeGenS g = modify (specializeGen @a @b (Gen.lift g))
+specializeGenS g = modify (specializeGen @a @b g)
 
 -- | Get a value generated from one of the generators in the registry and modify the registry
 --   using a state monad
@@ -199,7 +208,7 @@ setDistinct :: forall a ins out . (Eq a, Typeable a, Contains (GenIO a) out) => 
 setDistinct r = do
   ref <- newIORef []
   let g = makeFast @(GenIO a) r
-  pure $ setGen (distinctWith ref g) r
+  pure $ setGenIO (distinctWith ref g) r
 
 -- | Generate distinct values for a specific data type
 setDistinctS :: forall a m ins out . (Eq a, Typeable a, Contains (GenIO a) out, MonadState (Registry ins out) m, MonadIO m) => m ()
@@ -213,7 +222,7 @@ setDistinctFor :: forall a b ins out . (Typeable a, Contains (GenIO a) out, Eq b
 setDistinctFor r = do
   ref <- newIORef []
   let g = makeFast @(GenIO b) r
-  pure $ specializeGen @a (distinctWith ref g) r
+  pure $ specializeGenIO @a (distinctWith ref g) r
 
 -- | Generate distinct values for a specific data type, when used inside another data type
 setDistinctForS :: forall a b m ins out . (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out, MonadState (Registry ins out) m, MonadIO m) => m ()
