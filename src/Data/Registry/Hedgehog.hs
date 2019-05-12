@@ -1,4 +1,6 @@
+{-# LANGUAGE UndecidableInstances   #-}
 {-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 
 module Data.Registry.Hedgehog (

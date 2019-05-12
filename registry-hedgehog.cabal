@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f1ddad72921ceba5024a8d583ad0b2f2775dc66135f80455047273116bc38dcd
+-- hash: afcc78ed8706fa89c2270d64ea3dd640a4afa2db1ed1c5982c7fcce7160ca4e5
 
 name:           registry-hedgehog
 version:        0.1.0.0
@@ -23,7 +23,9 @@ source-repository head
 library
   exposed-modules:
       Data.Registry.Hedgehog
+      Data.Registry.Hedgehog.TH
       Data.Registry.Internal.Hedgehog
+      Data.Registry.Internal.TH
       Test.Tasty.Hedgehogx
   other-modules:
       Paths_registry_hedgehog
@@ -43,6 +45,7 @@ library
     , tasty-discover >=2 && <5
     , tasty-hedgehog >=0.1 && <1
     , tasty-th >=0.1 && <1
+    , template-haskell >=2.13 && <3.0
     , text >=1 && <2
     , transformers >=0.5 && <2
     , universum >=1 && <2
@@ -54,6 +57,7 @@ test-suite spec
   main-is: test.hs
   other-modules:
       AutoDiscoveredSpecs
+      Test.Data.Registry.Company
       Test.Data.Registry.Generators
       Test.Data.Registry.HedgehogSpec
       Paths_registry_hedgehog
@@ -76,6 +80,7 @@ test-suite spec
     , tasty-discover
     , tasty-hedgehog
     , tasty-th
+    , template-haskell >=2.13 && <3.0
     , text
     , transformers
     , universum

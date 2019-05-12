@@ -64,6 +64,7 @@ dependencies:
   - tasty-discover       >= 2     && < 5
   - tasty-hedgehog       >= 0.1   && < 1
   - tasty-th             >= 0.1   && < 1
+  - template-haskell     >= 2.13  && < 3.0
   - text                 >= 1     && < 2
   - transformers         >= 0.5   && < 2
   - universum            >= 1     && < 2

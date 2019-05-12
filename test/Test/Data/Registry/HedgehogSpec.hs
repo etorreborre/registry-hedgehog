@@ -14,6 +14,7 @@ import qualified Data.Text                     as T (length, take, toUpper)
 import           Hedgehog.Internal.Gen         hiding (lift, print)
 import           Hedgehog.Range
 import           Protolude                     hiding (list)
+import           Test.Data.Registry.Company
 import           Test.Data.Registry.Generators
 import           Test.Tasty.Hedgehogx          hiding (lift)
 
