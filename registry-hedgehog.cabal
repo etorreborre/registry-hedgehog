@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 43f24c96eca61918ac318573b5f30573358d5a979075a995f8c95a09c49ccf51
+-- hash: d6259c5709d061f685f6bf9248c96be009efecfc81c474288825777d0b48c3b3
 
 name:           registry-hedgehog
-version:        0.1.1.0
+version:        0.1.1.1
 synopsis:       utilities to work with Hedgehog generators and `registry`
 description:    This library provides some functions to extract generators from a "Registry" and make stateful modifications of that Registry to precisely control the generation of data
 category:       Control

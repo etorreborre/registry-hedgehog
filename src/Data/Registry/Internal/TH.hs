@@ -27,8 +27,9 @@ makeSelectGenerator name constructors = do
     -- | Create a parameters for the selection function
     parameterFor :: Name -> Con -> Q Pat
     parameterFor typeName constructor = do
+      constructorParam <- constructorParameterName constructor
       constructorTag <- tagName constructor
-      sigP (varP constructorTag) (appT (conT (mkName "GenIO")) (appT (appT (conT (mkName "Tag")) (litT (strTyLit (show constructorTag)))) (conT typeName)))
+      sigP (varP constructorParam) (appT (conT (mkName "GenIO")) (appT (appT (conT (mkName "Tag")) (litT (strTyLit (show constructorTag)))) (conT typeName)))
 
 -- Create a generator expression for a specific constructor of a data type
 -- runQ [|tag @"permanent" Permanent|]
@@ -36,20 +37,32 @@ makeSelectGenerator name constructors = do
 makeConstructorGenerator :: Con -> ExpQ
 makeConstructorGenerator constructor = do
   constructorTag  <- tagName constructor
-  constructorName <- nameOf constructor
-  appE (appTypeE (varE (mkName "tag")) (litT (strTyLit (show constructorTag)))) (conE constructorName)
+  constructorType <- nameOf constructor
+  appE (appTypeE (varE (mkName "tag")) (litT (strTyLit (show constructorTag)))) (conE constructorType)
 
 -- | Remove the tag of a given constructor: fmap unTag g :: GenIO (Tag "t" SomeType) -> GenIO SomeType
 untagGenerator :: Con -> ExpQ
 untagGenerator constructor = do
-  constructorTag <- tagName constructor
-  appE (appE (varE (mkName "fmap")) (varE (mkName "unTag"))) (varE constructorTag)
+  constructorParam <- constructorParameterName constructor
+  appE (appE (varE (mkName "fmap")) (varE (mkName "unTag"))) (varE constructorParam)
 
 -- | Create a tag used to distinguish constructors in an ADT
 tagName :: Con -> Q Name
 tagName constructor = do
+  name <- constructorName constructor
+  pure $ mkName $ toS name
+
+-- | Same as the tag name but lower cased
+constructorParameterName :: Con -> Q Name
+constructorParameterName constructor = do
+  name <- constructorName constructor
+  pure $ mkName (toS $ toLower name)
+
+-- | Extract the last name of a constructor
+constructorName :: Con -> Q Text
+constructorName constructor = do
   n <- nameOf constructor
-  pure $ mkName $ toS . last . splitOn "." . toLower $ show n
+  pure $ last . splitOn "." $ show n
 
 -- | The name of a given constructor
 nameOf :: Con -> Q Name
