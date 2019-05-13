@@ -1,5 +1,5 @@
 name: registry-hedgehog
-version: 0.1.1.1
+version: 0.2.0.0
 synopsis: utilities to work with Hedgehog generators and `registry`
 
 description: This library provides some functions to extract generators from a "Registry" and
@@ -55,14 +55,14 @@ default-extensions:
 dependencies:
   - base                 >= 4.7   && < 5
   - containers           >= 0.2   && < 1
-  - hedgehog             >= 0.6   && < 1
+  - hedgehog             >= 1.0   && < 2
   - mmorph               >= 1     && < 2
   - multimap             >= 1     && < 2
   - protolude            >= 0.2   && < 0.3
   - registry             >= 0.1.4 && < 2
   - tasty                >= 1     && < 2
   - tasty-discover       >= 2     && < 5
-  - tasty-hedgehog       >= 0.1   && < 1
+  - tasty-hedgehog       >= 0.3   && < 0.4
   - tasty-th             >= 0.1   && < 1
   - template-haskell     >= 2.13  && < 3.0
   - text                 >= 1     && < 2
@@ -85,8 +85,7 @@ tests:
       - mmorph
       - registry
       - registry-hedgehog
-      - hedgehog             >= 0.6 && < 1
-      - hedgehog-corpus
+      - hedgehog             >= 1.0 && < 2
       - generic-lens
       - tasty
       - tasty-discover

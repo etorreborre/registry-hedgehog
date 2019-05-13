@@ -11,12 +11,12 @@ import           Data.List                     (nub)
 import           Data.Registry
 import           Data.Registry.Hedgehog
 import qualified Data.Text                     as T (length, take, toUpper)
-import           Hedgehog.Internal.Gen         hiding (lift, print)
+import           Hedgehog.Internal.Gen         hiding (print)
 import           Hedgehog.Range
 import           Protolude                     hiding (list)
 import           Test.Data.Registry.Company
 import           Test.Data.Registry.Generators
-import           Test.Tasty.Hedgehogx          hiding (lift)
+import           Test.Tasty.Hedgehogx
 
 -- * This specification shows the usage of several features of this library
 --   First of all you will notice that if you run `stack test`

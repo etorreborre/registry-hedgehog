@@ -11,12 +11,12 @@ import           Data.Registry
 import           Data.Registry.Hedgehog
 import           Data.Registry.Hedgehog.TH
 import           Data.Registry.TH
-import           Hedgehog.Gen               as Gen hiding (lift, print)
-import           Hedgehog.Internal.Gen      hiding (lift, print)
+import           Hedgehog.Gen               as Gen hiding (print)
+import           Hedgehog.Internal.Gen      hiding (print)
 import           Hedgehog.Range
 import           Protolude                  hiding (list)
 import           Test.Data.Registry.Company
-import           Test.Tasty.Hedgehogx       hiding (lift)
+import           Test.Tasty.Hedgehogx
 
 registry =
     genFun Company

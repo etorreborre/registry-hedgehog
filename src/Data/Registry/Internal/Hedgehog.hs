@@ -16,22 +16,27 @@ module Data.Registry.Internal.Hedgehog (
 , distinctWith
 
 -- utilities
+, liftGen
 , sampleIO
 ) where
 
-import           Control.Monad.Trans.Maybe
+import           Control.Monad.Morph
 import           Data.IORef
-import           Data.Maybe                as Maybe
+import           Data.Maybe             as Maybe
 import           Hedgehog
-import           Hedgehog.Gen              as Gen
-import           Hedgehog.Internal.Gen     as Gen
-import           Hedgehog.Internal.Seed    as Seed (random)
-import           Hedgehog.Internal.Tree    as Tree (Node (..), Tree (..))
-import           Prelude                   (show, (!!))
-import           Protolude                 as P
+import           Hedgehog.Gen           as Gen
+import           Hedgehog.Internal.Gen  as Gen
+import           Hedgehog.Internal.Seed as Seed (random)
+import           Hedgehog.Internal.Tree as Tree (NodeT (..), runTreeT)
+import           Prelude                (show, (!!))
+import           Protolude              as P
 
 -- | All the generators we use are lifted into GenIO to allow some generators to be stateful
 type GenIO = GenT IO
+
+-- | Lift a pure generator into another monad like IO
+liftGen :: (Monad m) => Gen a -> GenT m a
+liftGen = hoist (pure . runIdentity)
 
 -- * CHOOSING VALUES DETERMINISTICALLY
 
@@ -85,7 +90,7 @@ distinct g = do
 distinctWith :: (MonadIO m, Eq a) => IORef [a] -> GenT m a -> GenT m a
 distinctWith ref g = GenT $ \size seed -> do
   as <- liftIO $ readIORef ref
-  a <- runGenT size seed $ (Gen.filter (not . flip elem as)) g
+  a <- runGenT size seed $ (Gen.filterT (not . flip elem as)) g
   liftIO $ writeIORef ref (a:as)
   pure a
 
@@ -100,7 +105,7 @@ sampleIO gen =
           panic "Hedgehog.Gen.sample: too many discards, could not generate a sample"
         else do
           seed <- Seed.random
-          r <- evalGenIO 30 seed gen
+          NodeT r _  <- runTreeT $ evalGenT 30 seed gen
           case r of
             Nothing ->
               loop (n - 1)
@@ -108,11 +113,3 @@ sampleIO gen =
               pure a
     in
       loop (100 :: Int)
-
--- | Runs a generator in IO, to get a value
-evalGenIO :: Size -> Seed -> GenIO a -> IO (Maybe a)
-evalGenIO size seed g = do
-  r <- runMaybeT . runTree $ runGenT size seed g
-  pure $ case r of
-    Nothing         -> Nothing
-    Just (Node a _) -> Just a

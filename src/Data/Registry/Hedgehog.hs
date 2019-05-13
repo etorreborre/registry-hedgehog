@@ -78,7 +78,7 @@ genFun = funTo @GenIO
 
 -- | Lift a Gen a into GenIO a to be added to a registry
 genVal :: forall a . (Typeable a) => Gen a -> Typed (GenIO a)
-genVal g = fun (Gen.lift g)
+genVal g = fun (liftGen g)
 
 -- | Extract a generator from a registry
 --   We use makeUnsafe assuming that the registry has been checked before
@@ -95,7 +95,7 @@ tweakGenS f = modify (tweakGen f)
 
 -- | Set a specific generator on the registry the value of a generator in a given registry
 setGen :: forall a ins out . (Typeable a) => Gen a -> Registry ins out -> Registry ins out
-setGen = setGenIO . Gen.lift
+setGen = setGenIO . liftGen
 
 setGenIO :: forall a ins out . (Typeable a) => GenIO a -> Registry ins out -> Registry ins out
 setGenIO genA = tweakUnsafe @(GenIO a) (const genA)
@@ -106,7 +106,7 @@ setGenS genA = modify (setGen genA)
 
 -- | Specialize a generator in a given context
 specializeGen :: forall a b ins out . (Typeable a, Typeable b, Contains (GenIO a) out) => Gen b -> Registry ins out -> Registry ins out
-specializeGen g = specializeGenIO @a (Gen.lift g)
+specializeGen g = specializeGenIO @a (liftGen g)
 
 -- | Specialize a generator in a given context
 specializeGenIO :: forall a b ins out . (Typeable a, Typeable b, Contains (GenIO a) out) => GenIO b -> Registry ins out -> Registry ins out
