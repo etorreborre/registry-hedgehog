@@ -138,11 +138,11 @@ makeNonEmptyS = modify (makeNonEmpty @a)
 -- * CONTAINERS COMBINATORS
 
 -- | Create a generator for a pair
-pairOf :: forall a b m . (Monad m) => GenT m a -> GenT m b -> GenT m (a, b)
+pairOf :: forall a b . GenIO a -> GenIO b -> GenIO (a, b)
 pairOf ga gb = (,) <$> ga <*> gb
 
 -- | Create a generator for a triple
-tripleOf :: forall a b c m . (Monad m) => GenT m a -> GenT m b -> GenT m c -> GenT m (a, b, c)
+tripleOf :: forall a b c . GenIO a -> GenIO b -> GenIO c -> GenIO (a, b, c)
 tripleOf ga gb gc = (,,) <$> ga <*> gb <*> gc
 
 -- | Create a default generator for a small list of elements

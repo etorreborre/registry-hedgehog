@@ -1,5 +1,5 @@
 name: registry-hedgehog
-version: 0.1.0.0
+version: 0.1.1.0
 synopsis: utilities to work with Hedgehog generators and `registry`
 
 description: This library provides some functions to extract generators from a "Registry" and
