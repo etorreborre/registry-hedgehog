@@ -1,53 +1,55 @@
-{-# LANGUAGE UndecidableInstances   #-}
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Registry.Hedgehog (
   -- creation / tweaking functions
   GenIO
 , Chooser (..)
+, forallS
+, forAllT -- re-export of forAllT for convenience purpose since we are working in GenIO
+, filterGenS
 , genFun
 , genVal
 , genWith
-, tweakGen
-, tweakGenS
+, modifyGenS
 , setGen
 , setGenIO
 , setGenS
 , specializeGen
 , specializeGenIO
 , specializeGenS
+, tweakGen
+, tweakGenS
 , makeNonEmpty
 , makeNonEmptyS
-, forallS
-, forAllT -- re-export of forAllT for convenience purpose since we are working in GenIO
 
 -- combinators to compose different types of generators
-, pairOf
-, tripleOf
+, eitherOf
+, hashMapOf
 , listOf
 , listOfMinMax
-, nonEmptyOf
-, maybeOf
-, eitherOf
-, setOf
 , mapOf
+, maybeOf
 , nonEmptyMapOf
-, hashMapOf
+, nonEmptyOf
+, pairOf
+, setOf
+, tripleOf
 
 -- cycling values
-, setCycleChooserS
-, setCycleChooser
 , choiceChooser
 , chooseOne
+, setCycleChooser
+, setCycleChooserS
 
 -- making distinct values
-, setDistinctS
-, setDistinctForS
+, distinct
 , setDistinct
 , setDistinctFor
-, distinct
+, setDistinctForS
+, setDistinctS
 
 -- sampling for GenIO generators
 , sampleIO
@@ -65,6 +67,7 @@ import           Data.Registry.Internal.Types
 import           Data.Set                        as Set (fromList)
 import           Hedgehog
 import           Hedgehog.Gen                    as Gen
+import           Hedgehog.Internal.Gen           as Gen
 import           Hedgehog.Internal.Property      (forAllT)
 import           Hedgehog.Range
 import           Protolude                       as P
@@ -115,6 +118,14 @@ specializeGenIO = specialize @(GenIO a)
 -- | Specialize a generator in a given context
 specializeGenS :: forall a b m ins out . (Typeable a, Typeable b, Contains (GenIO a) out, MonadState (Registry ins out) m) => Gen b -> m ()
 specializeGenS g = modify (specializeGen @a @b g)
+
+-- | Modify a generator
+modifyGenS :: forall a ins out . (Typeable a) => (GenIO a -> GenIO a) -> PropertyT (StateT (Registry ins out) IO) ()
+modifyGenS f = modify (tweakUnsafe @(GenIO a) f)
+
+-- | Filter a generator
+filterGenS :: forall a ins out . (Typeable a) => (a -> Bool) -> PropertyT (StateT (Registry ins out) IO) ()
+filterGenS = modifyGenS . Gen.filterT
 
 -- | Get a value generated from one of the generators in the registry and modify the registry
 --   using a state monad
