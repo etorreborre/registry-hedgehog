@@ -158,7 +158,7 @@ tripleOf ga gb gc = (,,) <$> ga <*> gb <*> gc
 
 -- | Create a default generator for a small list of elements
 listOf :: forall a . GenIO a -> GenIO [a]
-listOf = Gen.list (linear 0 3)
+listOf = Gen.list (linear 0 10)
 
 -- | Create a default generator for a list of elements of min elements and max elements
 listOfMinMax :: forall a . Int -> Int -> GenIO a -> GenIO [a]
@@ -166,7 +166,7 @@ listOfMinMax min' max' = Gen.list (linear min' max')
 
 -- | Create a default generator for a small non-empty list of elements
 nonEmptyOf :: GenIO a -> GenIO (NonEmpty a)
-nonEmptyOf = Gen.nonEmpty (linear 1 3)
+nonEmptyOf = Gen.nonEmpty (linear 1 10)
 
 -- | Create a default generator for a Maybe, choosing evenly between Nothing and Just
 maybeOf :: forall a . GenIO a -> GenIO (Maybe a)

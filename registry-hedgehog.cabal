@@ -2,10 +2,11 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0a88219eedcc3cc22801d001a75f0e9b8bb8d81b53a4915775b6e1dd0aaaf4dd
+-- hash: 6c63e166f8aab0cf1077151dab13f3ecea7c4f087fa51974f1207fbba1953617
 
+cabal-version:  >= 1.10
 name:           registry-hedgehog
-version:        0.2.0.2
+version:        0.2.0.3
 synopsis:       utilities to work with Hedgehog generators and `registry`
 description:    This library provides some functions to extract generators from a "Registry" and make stateful modifications of that Registry to precisely control the generation of data
 category:       Control
@@ -13,7 +14,6 @@ maintainer:     etorreborre@yahoo.com
 license:        MIT
 license-file:   LICENSE.txt
 build-type:     Simple
-cabal-version:  >= 1.10
 
 source-repository head
   type: git
