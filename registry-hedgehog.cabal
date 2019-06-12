@@ -1,10 +1,11 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6c63e166f8aab0cf1077151dab13f3ecea7c4f087fa51974f1207fbba1953617
+-- hash: 01e545d70a6ccd543bfc1fc150dee266b4ad8ca45d01392b875cfb469134f48b
 
-cabal-version:  >= 1.10
 name:           registry-hedgehog
 version:        0.2.0.3
 synopsis:       utilities to work with Hedgehog generators and `registry`
@@ -21,6 +22,8 @@ source-repository head
 
 library
   exposed-modules:
+      Data.Registry.Feat
+      Data.Registry.Feat.TH
       Data.Registry.Hedgehog
       Data.Registry.Hedgehog.TH
       Data.Registry.Internal.Hedgehog
@@ -40,11 +43,13 @@ library
     , multimap >=1 && <2
     , protolude >=0.2 && <0.3
     , registry >=0.1.4 && <2
+    , size-based >=0.1 && <0.2
     , tasty >=1 && <2
     , tasty-discover >=2 && <5
     , tasty-hedgehog >=1.0 && <2.0
     , tasty-th >=0.1 && <1
     , template-haskell >=2.13 && <3.0
+    , testing-feat >=1.1 && <1.2
     , text >=1 && <2
     , transformers >=0.5 && <2
     , universum >=1 && <2
@@ -59,6 +64,7 @@ test-suite spec
       Test.Data.Registry.Company
       Test.Data.Registry.Generators
       Test.Data.Registry.HedgehogSpec
+      Test.Data.Registry.TestingFeatSpec
       Paths_registry_hedgehog
   hs-source-dirs:
       test
@@ -74,11 +80,13 @@ test-suite spec
     , protolude >=0.2 && <0.3
     , registry
     , registry-hedgehog
+    , size-based >=0.1 && <0.2
     , tasty
     , tasty-discover
     , tasty-hedgehog
     , tasty-th
     , template-haskell >=2.13 && <3.0
+    , testing-feat >=1.1 && <1.2
     , text
     , transformers
     , universum

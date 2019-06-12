@@ -66,6 +66,8 @@ dependencies:
   - tasty-th             >= 0.1   && < 1
   - template-haskell     >= 2.13  && < 3.0
   - text                 >= 1     && < 2
+  - size-based           >= 0.1   && < 0.2
+  - testing-feat         >= 1.1   && < 1.2
   - transformers         >= 0.5   && < 2
   - universum            >= 1     && < 2
   - unordered-containers >= 0.1   && < 1

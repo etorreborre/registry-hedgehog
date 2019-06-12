@@ -19,7 +19,7 @@ makeSelectGenerator :: Name -> [Con] -> ExpQ
 makeSelectGenerator name constructors = do
   chooserParam <- [p| (chooser :: GenIO Chooser) |]
   otherParams <- traverse (parameterFor name) constructors
-  untaggedGenerators <- traverse untagGenerator constructors
+  untaggedGenerators <- traverse untagConstructor constructors
   expression <- appE (appE (varE (mkName "chooseOne")) (varE (mkName "chooser"))) (pure $ ListE untaggedGenerators)
   pure $ LamE (chooserParam : otherParams) expression
 
@@ -31,6 +31,23 @@ makeSelectGenerator name constructors = do
       constructorTag <- tagName constructor
       sigP (varP constructorParam) (appT (conT (mkName "GenIO")) (appT (appT (conT (mkName "Tag")) (litT (strTyLit (show constructorTag)))) (conT typeName)))
 
+-- | Create an enumerate for selecting between constructors of an ADT
+makeSelectEnumerate :: Name -> [Con] -> ExpQ
+makeSelectEnumerate name constructors = do
+  otherParams <- traverse (parameterFor name) constructors
+  untaggedEnumerates <- traverse untagConstructor constructors
+  expression <- appE (varE (mkName "asum")) (pure $ ListE untaggedEnumerates)
+  pure $ LamE otherParams expression
+
+  where
+    -- | Create a parameters for the selection function
+    parameterFor :: Name -> Con -> Q Pat
+    parameterFor typeName constructor = do
+      constructorParam <- constructorParameterName constructor
+      constructorTag <- tagName constructor
+      sigP (varP constructorParam) (appT (conT (mkName "Enumerate")) (appT (appT (conT (mkName "Tag")) (litT (strTyLit (show constructorTag)))) (conT typeName)))
+
+
 -- Create a generator expression for a specific constructor of a data type
 -- runQ [|tag @"permanent" Permanent|]
 -- AppE (AppTypeE (VarE Data.Registry.Lift.tag) (LitT (StrTyLit "permanent"))) (ConE Test.Data.Registry.Generators.Permanent)
@@ -41,8 +58,8 @@ makeConstructorGenerator constructor = do
   appE (appTypeE (varE (mkName "tag")) (litT (strTyLit (show constructorTag)))) (conE constructorType)
 
 -- | Remove the tag of a given constructor: fmap unTag g :: GenIO (Tag "t" SomeType) -> GenIO SomeType
-untagGenerator :: Con -> ExpQ
-untagGenerator constructor = do
+untagConstructor :: Con -> ExpQ
+untagConstructor constructor = do
   constructorParam <- constructorParameterName constructor
   appE (appE (varE (mkName "fmap")) (varE (mkName "unTag"))) (varE constructorParam)
 
@@ -72,14 +89,6 @@ nameOf other = do
   qReport True ("we can only create generators for normal constructors and records, got: " <> show other)
   fail "generators creation failed"
 
--- | The list of types necessary to create a given constructor
-typesOf :: Con -> Q [Type]
-typesOf (NormalC _ types) = pure (snd <$> types)
-typesOf (RecC _ types)    = pure $ (\(_,_,t) -> t)  <$> types
-typesOf other = do
-  qReport True ("we can only create generators for normal constructors and records, got: " <> show other)
-  fail "generators creation failed"
-
 -- | runQ [| fun g <: genFun e <: genFun f|]
 --   InfixE (Just (AppE (VarE Data.Registry.Registry.fun) (UnboundVarE g))) (VarE <:) (Just (InfixE (Just (AppE (VarE Data.Registry.Hedgehog.genFun) (UnboundVarE e)))
 --  (VarE Data.Registry.Registry.<:) (Just (AppE (VarE Data.Registry.Hedgehog.genFun) (UnboundVarE f)))))
@@ -94,12 +103,28 @@ assembleGeneratorsToRegistry selectorGenerator [g] =
 assembleGeneratorsToRegistry selectorGenerator (g:gs) =
   appendExpressions (genFunOf (pure g)) (assembleGeneratorsToRegistry selectorGenerator gs)
 
+-- | runQ [| fun g <: enumFun e <: enumFun f|]
+--   InfixE (Just (AppE (VarE Data.Registry.Registry.fun) (UnboundVarE g))) (VarE <:) (Just (InfixE (Just (AppE (VarE Data.Registry.Hedgehog.enumFun) (UnboundVarE e)))
+--  (VarE Data.Registry.Registry.<:) (Just (AppE (VarE Data.Registry.Hedgehog.enumFun) (UnboundVarE f)))))
+assembleEnumeratesToRegistry :: Exp -> [Exp] -> ExpQ
+assembleEnumeratesToRegistry _ [] =
+  fail "enumerate creation failed"
+
+assembleEnumeratesToRegistry selectorGenerator [g] =
+  appendExpressions (enumFunOf (pure g)) (funOf (pure selectorGenerator))
+
+assembleEnumeratesToRegistry selectorGenerator (g:gs) =
+  appendExpressions (enumFunOf (pure g)) (assembleEnumeratesToRegistry selectorGenerator gs)
+
 appendExpressions :: ExpQ -> ExpQ -> ExpQ
 appendExpressions e1 e2 =
   infixE (Just e1) (varE (mkName "<:")) (Just e2)
 
 genFunOf :: ExpQ -> ExpQ
 genFunOf = appE (varE (mkName "genFun"))
+
+enumFunOf :: ExpQ -> ExpQ
+enumFunOf = appE (varE (mkName "enumFun"))
 
 funOf :: ExpQ -> ExpQ
 funOf = appE (varE (mkName "fun"))
