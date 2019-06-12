@@ -6,19 +6,32 @@
 module Data.Registry.Feat where
 
 import           Control.Enumerable
-import           Data.HashMap.Strict          as HashMap (HashMap, fromList)
-import           Data.List.NonEmpty           hiding (cycle, nonEmpty, (!!))
-import           Data.Map                     as Map (fromList)
-import           Data.Maybe                   as Maybe
+import           Control.Monad.Morph
+import           Data.HashMap.Strict             as HashMap (HashMap, fromList)
+import           Data.List.NonEmpty
+import           Data.Map                        as Map (fromList)
+import           Data.Maybe                      as Maybe
 import           Data.Registry
+import           Data.Registry.Internal.Hedgehog (GenIO, liftGen)
 import           Data.Registry.Internal.Types
-import           Data.Set                     as Set (fromList)
+import           Data.Set                        as Set (fromList)
 import           Hedgehog
-import           Protolude                    as P
+import           Hedgehog.Gen                    as Gen (discard, integral)
+import           Hedgehog.Internal.Gen           as Gen (GenT (..), runGenT)
+import           Hedgehog.Internal.Property      (forAllT)
+import           Hedgehog.Range                  as Range (Size (..), linear)
+import           Protolude                       as P
+import           Test.Feat.Access                (indexWith)
 import           Test.Feat.Enumerate
 
-
 -- * CREATION / TWEAKING OF REGISTRY ENUMERATES
+
+-- | Get a value generated from an enumerate in the registry
+--   using a state monad
+enumAllS :: forall a m out . (Typeable a, Show a, MonadIO m) => PropertyT (StateT (Registry _ out) m) a
+enumAllS = do
+  r <- P.lift $ get
+  withFrozenCallStack $ hoist liftIO $ forAllT (enumToGen $ enumWith @a r)
 
 -- | Create an Enumerate a for a given constructor of type a
 enumFun :: forall a b . (ApplyVariadic Enumerate a b, Typeable a, Typeable b) => a -> Typed b
@@ -128,3 +141,38 @@ enumHashMapOf gk gv = HashMap.fromList <$> enumListOf (enumPairOf gk gv)
 enumNonEmptyMapOf :: forall k v . (Ord k) => Enumerate k -> Enumerate v -> Enumerate (Map k v)
 enumNonEmptyMapOf gk gv =
   (\h t -> Map.fromList (h : t)) <$> enumPairOf gk gv <*> enumListOf (enumPairOf gk gv)
+
+-- * GENERATORS
+
+enumToGen :: Enumerate a -> GenIO a
+enumToGen a = liftGen $
+  GenT $ \(Size size) seed ->
+    if size <= 50 then
+      pure (indexWith a (fromIntegral size))
+    else
+      runGenT (Size size) seed (uniformWith a size)
+
+
+-- | Draw a value uniformly from an enumerate where the size is bounded
+uniformWith :: Enumerate a -> Int -> Gen a
+uniformWith = uni . parts where
+  uni :: [Finite a] -> Int -> Gen a
+  uni  []  _     =  Gen.discard
+  uni  ps  maxp  =  let  (incl, rest)  = P.splitAt maxp ps
+                         finite        = mconcat incl
+    in  case fCard finite of
+          0  -> uni rest 1
+          _  -> do  i <- Gen.integral (Range.linear 0 (fCard finite - 1))
+                    pure (fIndex finite i)
+
+-- increasing :: Range
+-- increasing = Range 0 (\r -> (r + 1, r + 1))
+-- integral_' :: (MonadGen m, Integral a) => Range a -> m a
+-- integral_' range =
+--   generate $ \size seed ->
+--     let
+--       (x, y) =
+--         Range.bounds size range
+--     in
+--       fromInteger . fst $
+--         Seed.nextInteger (toInteger x) (toInteger y) seed

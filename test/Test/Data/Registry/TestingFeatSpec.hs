@@ -10,10 +10,11 @@ module Test.Data.Registry.TestingFeatSpec where
 import           Data.Registry
 import           Data.Registry.Feat
 import           Data.Registry.Feat.TH
-import           Protolude             hiding (list)
-import           Test.Feat.Access
-import           Test.Feat.Enumerate
+import           Data.Registry.Hedgehog
+import           Protolude                  hiding (list)
 import           Test.Data.Registry.Company
+import           Test.Feat.Access hiding (values)
+import           Test.Feat.Enumerate
 import           Test.Tasty.Hedgehogx
 
 test_enumSizedListOf = test "we can enumerate a list of elements with a fixed size" $ do
@@ -35,7 +36,21 @@ test_th = test "we can make an enumerate for an ADT" $ do
   selectWith status 0 1 === Temporary 0
   selectWith status 1 0 === Temporary 1
 
+test_to_gen = prop "an enumerate can be transformed into a generator" $ do
+  -- values <- enumAll @[EmployeeStatus]
+  -- print values
+  success
+
 
 -- * HELPERS
 
 enumInt = optimal :: Enumerate Int
+
+registry =
+    fun (enumListOf @EmployeeStatus)
+  <: fun enumInt
+  <: $(makeEnums ''EmployeeStatus)
+
+
+enumAll :: forall a . _ => PropertyT IO a
+enumAll = withFrozenCallStack $ forAllT (enumToGen $ enumWith @a registry)
