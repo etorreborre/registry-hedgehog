@@ -152,7 +152,6 @@ enumToGen a = liftGen $
     else
       runGenT (Size size) seed (uniformWith a size)
 
-
 -- | Draw a value uniformly from an enumerate where the size is bounded
 uniformWith :: Enumerate a -> Int -> Gen a
 uniformWith = uni . parts where
@@ -164,15 +163,3 @@ uniformWith = uni . parts where
           0  -> uni rest 1
           _  -> do  i <- Gen.integral (Range.linear 0 (fCard finite - 1))
                     pure (fIndex finite i)
-
--- increasing :: Range
--- increasing = Range 0 (\r -> (r + 1, r + 1))
--- integral_' :: (MonadGen m, Integral a) => Range a -> m a
--- integral_' range =
---   generate $ \size seed ->
---     let
---       (x, y) =
---         Range.bounds size range
---     in
---       fromInteger . fst $
---         Seed.nextInteger (toInteger x) (toInteger y) seed
