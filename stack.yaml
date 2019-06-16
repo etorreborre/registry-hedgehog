@@ -6,10 +6,11 @@ packages:
 extra-deps:
   - registry-0.1.4.2
   - hedgehog-1.0
+  - testing-type-modifiers-0.1.0.1
   - github: etorreborre/tasty-hedgehog
     commit: a7d8f6f59a4538b8ba4e276e540b9731d32cc561
   - github: etorreborre/testing-feat
-    commit: b1ab6a6cce312f9167570f66343686812e113960
+    commit: 8d6f12f0e8b9e3bed44547180397e6a050609d25
 
 flags: {}
 

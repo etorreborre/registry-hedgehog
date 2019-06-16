@@ -53,24 +53,25 @@ default-extensions:
  - TypeOperators
 
 dependencies:
-  - base                 >= 4.7   && < 5
-  - containers           >= 0.2   && < 1
-  - hedgehog             >= 1.0   && < 2
-  - mmorph               >= 1     && < 2
-  - multimap             >= 1     && < 2
-  - protolude            >= 0.2   && < 0.3
-  - registry             >= 0.1.4 && < 2
-  - tasty                >= 1     && < 2
-  - tasty-discover       >= 2     && < 5
-  - tasty-hedgehog       >= 1.0   && < 2.0
-  - tasty-th             >= 0.1   && < 1
-  - template-haskell     >= 2.13  && < 3.0
-  - text                 >= 1     && < 2
-  - size-based           >= 0.1   && < 0.2
-  - testing-feat         >= 1.1   && < 1.2
-  - transformers         >= 0.5   && < 2
-  - universum            >= 1     && < 2
-  - unordered-containers >= 0.1   && < 1
+  - base                   >= 4.7   && < 5
+  - containers             >= 0.2   && < 1
+  - hedgehog               >= 1.0   && < 2
+  - mmorph                 >= 1     && < 2
+  - multimap               >= 1     && < 2
+  - protolude              >= 0.2   && < 0.3
+  - registry               >= 0.1.4 && < 2
+  - tasty                  >= 1     && < 2
+  - tasty-discover         >= 2     && < 5
+  - tasty-hedgehog         >= 1.0   && < 2.0
+  - tasty-th               >= 0.1   && < 1
+  - template-haskell       >= 2.13  && < 3.0
+  - text                   >= 1     && < 2
+  - size-based             >= 0.1   && < 0.2
+  - testing-feat           >= 1.1   && < 1.2
+  - testing-type-modifiers >= 0.1   && < 0.2
+  - transformers           >= 0.5   && < 2
+  - universum              >= 1     && < 2
+  - unordered-containers   >= 0.1   && < 1
 
 library:
   source-dirs: src

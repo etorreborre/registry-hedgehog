@@ -102,7 +102,7 @@ enumListOf a = pay (pure [] <|> ((:) <$> a <*> enumListOf a))
 -- | Create an enumerator for a list of elements of min elements and max elements
 enumListOfMinMax :: forall a . Int -> Int -> Enumerate a -> Enumerate [a]
 enumListOfMinMax min' max' a
-  | min' < max'  = pay (enumSizedListOf min' a <|> enumListOfMinMax (min' + 1) max' a)
+  | min' < max'  = (enumSizedListOf min' a <|> enumListOfMinMax (min' + 1) max' a)
   | min' == max' = enumSizedListOf min' a
   | otherwise    = panic $ "cannot enumerate a list of elements with min > max. min=" <> show min' <> ", max=" <> show max'
 
@@ -117,6 +117,10 @@ enumSizedListOf size a
 enumNonEmptyOf :: Enumerate a -> Enumerate (NonEmpty a)
 enumNonEmptyOf a = pay ((:|) <$> a <*> enumListOf a)
 
+-- | Create an enumerator for a non-empty list of min elements and max elements
+enumNonEmptyOfMinMax :: Int -> Int -> Enumerate a -> Enumerate (NonEmpty a)
+enumNonEmptyOfMinMax min' max' a = ((:|) <$> a <*> enumListOfMinMax (min' - 1) (max' - 1) a)
+
 -- | Create an enumerator for a Maybe
 enumMaybeOf :: forall a . Enumerate a -> Enumerate (Maybe a)
 enumMaybeOf enumA = pure Nothing <|> (Just <$> enumA)
@@ -126,21 +130,32 @@ enumEitherOf :: forall a b . Enumerate a -> Enumerate b -> Enumerate (Either a b
 enumEitherOf enumA enumB = (Left <$> enumA) <|> (Right <$> enumB)
 
 -- | Create a default enumerator for a small set of elements
-enumSsetOf :: forall a . (Ord a) => Enumerate a -> Enumerate (Set a)
-enumSsetOf = fmap Set.fromList . enumListOf
+enumSetOf :: forall a . (Ord a) => Enumerate a -> Enumerate (Set a)
+enumSetOf = fmap Set.fromList . enumListOf
+
+enumSetOfMinMax :: forall a . (Ord a) => Int -> Int -> Enumerate a -> Enumerate (Set a)
+enumSetOfMinMax min' max' = fmap Set.fromList . enumListOfMinMax min' max'
 
 -- | Create a default enumerator for map of key/values
 enumMapOf :: forall k v . (Ord k) => Enumerate k -> Enumerate v -> Enumerate (Map k v)
 enumMapOf gk gv = Map.fromList <$> enumListOf (enumPairOf gk gv)
 
+enumMapOfMinMax :: forall k v . (Ord k) => Int -> Int -> Enumerate k -> Enumerate v -> Enumerate (Map k v)
+enumMapOfMinMax min' max' gk gv = Map.fromList <$> enumListOfMinMax min' max' (enumPairOf gk gv)
+
 -- | Create a default enumerator for HashMap of key/values
 enumHashMapOf :: forall k v . (Ord k, Hashable k) => Enumerate k -> Enumerate v -> Enumerate (HashMap k v)
 enumHashMapOf gk gv = HashMap.fromList <$> enumListOf (enumPairOf gk gv)
 
+enumHashMapOfMinMax :: forall k v . (Ord k, Hashable k) => Int -> Int -> Enumerate k -> Enumerate v -> Enumerate (HashMap k v)
+enumHashMapOfMinMax min' max' gk gv = HashMap.fromList <$> enumListOfMinMax min' max' (enumPairOf gk gv)
+
 -- | Create a default enumerator for a small non-empty map of elements
 enumNonEmptyMapOf :: forall k v . (Ord k) => Enumerate k -> Enumerate v -> Enumerate (Map k v)
-enumNonEmptyMapOf gk gv =
-  (\h t -> Map.fromList (h : t)) <$> enumPairOf gk gv <*> enumListOf (enumPairOf gk gv)
+enumNonEmptyMapOf gk gv = (\h t -> Map.fromList (h : t)) <$> enumPairOf gk gv <*> enumListOf (enumPairOf gk gv)
+
+enumNonEmptyMapOfMinMax :: forall k v . (Ord k) => Int -> Int -> Enumerate k -> Enumerate v -> Enumerate (Map k v)
+enumNonEmptyMapOfMinMax min' max' gk gv = (\h t -> Map.fromList (h : t)) <$> enumPairOf gk gv <*> enumListOfMinMax min' max' (enumPairOf gk gv)
 
 -- * GENERATORS
 

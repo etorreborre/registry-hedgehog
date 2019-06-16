@@ -1,11 +1,10 @@
-cabal-version: 1.12
-
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.28.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 01e545d70a6ccd543bfc1fc150dee266b4ad8ca45d01392b875cfb469134f48b
+-- hash: ff43c6c378a957ede006cadf921408d50d7afe80ab1ff8a44909cd565cce8356
 
+cabal-version:  >= 1.10
 name:           registry-hedgehog
 version:        0.2.0.3
 synopsis:       utilities to work with Hedgehog generators and `registry`
@@ -50,6 +49,7 @@ library
     , tasty-th >=0.1 && <1
     , template-haskell >=2.13 && <3.0
     , testing-feat >=1.1 && <1.2
+    , testing-type-modifiers >=0.1 && <0.2
     , text >=1 && <2
     , transformers >=0.5 && <2
     , universum >=1 && <2
@@ -87,6 +87,7 @@ test-suite spec
     , tasty-th
     , template-haskell >=2.13 && <3.0
     , testing-feat >=1.1 && <1.2
+    , testing-type-modifiers >=0.1 && <0.2
     , text
     , transformers
     , universum
