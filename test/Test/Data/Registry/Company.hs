@@ -1,6 +1,6 @@
 module Test.Data.Registry.Company where
 
-import           Protolude
+import           Protolude hiding (D1, C1)
 
 -- Some complex nested data
 data Company = Company {
@@ -25,3 +25,4 @@ data EmployeeStatus =
    Permanent
  | Temporary Int -- number of days
  deriving (Eq, Show)
+

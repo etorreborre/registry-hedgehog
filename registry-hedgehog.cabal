@@ -1,10 +1,11 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ff43c6c378a957ede006cadf921408d50d7afe80ab1ff8a44909cd565cce8356
+-- hash: 8956fc6c5f994871d001cd1e71134197d65432768920fc73e9c4086f94467449
 
-cabal-version:  >= 1.10
 name:           registry-hedgehog
 version:        0.2.0.3
 synopsis:       utilities to work with Hedgehog generators and `registry`
@@ -25,6 +26,7 @@ library
       Data.Registry.Feat.TH
       Data.Registry.Hedgehog
       Data.Registry.Hedgehog.TH
+      Data.Registry.Internal.Feat
       Data.Registry.Internal.Hedgehog
       Data.Registry.Internal.TH
       Test.Tasty.Hedgehogx
@@ -37,7 +39,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers >=0.2 && <1
-    , hedgehog >=1.0 && <2
+    , hedgehog >=1.0.1 && <2
     , mmorph >=1 && <2
     , multimap >=1 && <2
     , protolude >=0.2 && <0.3
@@ -62,6 +64,7 @@ test-suite spec
   other-modules:
       AutoDiscoveredSpecs
       Test.Data.Registry.Company
+      Test.Data.Registry.EnumerateData
       Test.Data.Registry.Generators
       Test.Data.Registry.HedgehogSpec
       Test.Data.Registry.TestingFeatSpec

@@ -32,3 +32,7 @@ makeGenerators genType = do
     other -> do
       qReport True ("can only create generators for an ADT, got: " <> show other)
       fail "generators creation failed"
+
+-- | Alias for makeGenerators
+makeGens :: Name -> ExpQ
+makeGens = makeGenerators

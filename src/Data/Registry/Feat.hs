@@ -3,7 +3,51 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Registry.Feat where
+module Data.Registry.Feat (
+  -- create a property, analogous to forallA
+  enumAllS
+
+  -- registry creation / modification / access
+, enumFun
+, enumVal
+, enumWith
+, tweakEnum
+, tweakEnumS
+, setEnum
+, setEnumS
+, specializeEnum
+, specializeEnumS
+, modifyEnumS
+, makeNonEmptyEnum
+, makeNonEmptyEnumS
+
+-- combinators for frequent enumerations
+, enumPairOf
+, enumTripleOf
+, enumListOf
+, enumListOfMinMax
+, enumSizedListOf
+, enumNonEmptyOf
+, enumNonEmptyOfMinMax
+, enumMaybeOf
+, enumEitherOf
+, enumSetOf
+, enumSetOfMinMax
+, enumMapOf
+, enumMapOfMinMax
+, enumHashMapOf
+, enumHashMapOfMinMax
+, enumNonEmptyMapOf
+, enumNonEmptyMapOfMinMax
+
+-- transform enumerations to generators
+, enumToGen
+, enumToGenUntil
+, uniformWith
+, module Test.Feat.Access
+, module Test.Feat.Enumerate
+, module Data.Registry.Internal.Feat
+) where
 
 import           Control.Enumerable
 import           Control.Monad.Morph
@@ -12,16 +56,17 @@ import           Data.List.NonEmpty
 import           Data.Map                        as Map (fromList)
 import           Data.Maybe                      as Maybe
 import           Data.Registry
+import           Data.Registry.Internal.Feat     (bconcat, breadthConcat)
 import           Data.Registry.Internal.Hedgehog (GenIO, liftGen)
 import           Data.Registry.Internal.Types
 import           Data.Set                        as Set (fromList)
 import           Hedgehog
-import           Hedgehog.Gen                    as Gen (discard, integral)
+import           Hedgehog.Gen                    as Gen (integral)
 import           Hedgehog.Internal.Gen           as Gen (GenT (..), runGenT)
 import           Hedgehog.Internal.Property      (forAllT)
 import           Hedgehog.Range                  as Range (Size (..), linear)
 import           Protolude                       as P
-import           Test.Feat.Access                (indexWith)
+import           Test.Feat.Access                (indexWith, selectWith, valuesWith, skipping, bounded, sizeRange)
 import           Test.Feat.Enumerate
 
 -- * CREATION / TWEAKING OF REGISTRY ENUMERATES
@@ -160,21 +205,48 @@ enumNonEmptyMapOfMinMax min' max' gk gv = (\h t -> Map.fromList (h : t)) <$> enu
 -- * GENERATORS
 
 enumToGen :: Enumerate a -> GenIO a
-enumToGen a = liftGen $
-  GenT $ \(Size size) seed ->
-    if size <= 50 then
-      pure (indexWith a (fromIntegral size))
-    else
-      runGenT (Size size) seed (uniformWith a size)
+enumToGen = makeGeneratorFromEnumerate Nothing
+
+enumToGenUntil :: Int64 -> Enumerate a -> GenIO a
+enumToGenUntil = makeGeneratorFromEnumerate . Just
+
+makeGeneratorFromEnumerate :: Maybe Int64 -> Enumerate a -> GenIO a
+makeGeneratorFromEnumerate maxSizeForEnumeration a = liftGen $
+  GenT $ \currentSize@(Size size) seed ->
+    case maxSizeForEnumeration of
+      Just maxSize ->
+        if currentSize <= Size maxSize then
+          pure (safeIndexWith a (fromIntegral size))
+        else
+          runGenT currentSize seed (uniformWith a size)
+      Nothing ->
+        pure (safeIndexWith a (fromIntegral size))
 
 -- | Draw a value uniformly from an enumerate where the size is bounded
-uniformWith :: Enumerate a -> Int -> Gen a
-uniformWith = uni . parts where
-  uni :: [Finite a] -> Int -> Gen a
-  uni  []  _     =  Gen.discard
-  uni  ps  maxp  =  let  (incl, rest)  = P.splitAt maxp ps
-                         finite        = mconcat incl
-    in  case fCard finite of
-          0  -> uni rest 1
-          _  -> do  i <- Gen.integral (Range.linear 0 (fCard finite - 1))
-                    pure (fIndex finite i)
+uniformWith :: Enumerate a -> Int64 -> Gen a
+uniformWith as index =
+  safeIndexWith as <$> Gen.integral (Range.linear 0 (fromIntegral index))
+
+-- | Try to access the element at a given index.
+--   If the enumerate is too small cycle from the beginning
+safeIndexWith :: Enumerate a -> Int64 -> a
+safeIndexWith as index =
+  let selected = selectParts (parts as) index
+      selectedSize = fromIntegral $ sum (fmap fCard selected)
+  in
+    if index < selectedSize then
+      indexWith as (fromIntegral index)
+    else
+      safeIndexWith as (index - selectedSize)
+
+-- | Select finite parts until we go above a given index
+selectParts :: [Finite a] -> Int64 -> [Finite a]
+selectParts = go []
+  where
+    go :: [Finite a] -> [Finite a] -> Int64 -> [Finite a]
+    go res [] _ = res
+    go res (f:fs) index =
+      if fromIntegral index < fCard f then
+        P.reverse (f:res)
+      else
+        go (f:res) fs (index - fromIntegral (fCard f))

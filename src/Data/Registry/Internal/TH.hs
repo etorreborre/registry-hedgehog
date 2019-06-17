@@ -36,7 +36,7 @@ makeSelectEnumerate :: Name -> [Con] -> ExpQ
 makeSelectEnumerate name constructors = do
   otherParams <- traverse (parameterFor name) constructors
   untaggedEnumerates <- traverse untagConstructor constructors
-  expression <- appE (varE (mkName "asum")) (pure $ ListE untaggedEnumerates)
+  expression <- appE (varE (mkName "bconcat")) (pure $ ListE untaggedEnumerates)
   pure $ LamE otherParams expression
 
   where

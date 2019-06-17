@@ -17,6 +17,7 @@ module Test.Tasty.Hedgehogx (
 , gotException
 , groupByModuleName
 , minTestsOk
+, maxSize
 , mustBe
 , noShrink
 , prop
@@ -126,6 +127,10 @@ makeSourceLink =
 minTestsOk :: Int -> TestTree -> TestTree
 minTestsOk n = localOption (HedgehogTestLimit (Just (toEnum n :: TestLimit)))
 
+-- | Set the maximum size to use for generators and enumerations
+maxSize :: Int -> TestTree -> TestTree
+maxSize n = localOption (HedgehogSizeLimit (Just (toEnum n :: SizeLimit)))
+
 -- | Don't shrink failures
 noShrink :: TestTree -> TestTree
 noShrink = localOption (HedgehogShrinkLimit (Just (0 :: ShrinkLimit)))
@@ -166,6 +171,7 @@ setOptionSet :: OptionSet -> TestTree -> TestTree
 setOptionSet os =
   localOption (lookupOption os :: HedgehogTestLimit) .
   localOption (lookupOption os :: HedgehogShrinkLimit) .
+  localOption (lookupOption os :: HedgehogSizeLimit) .
   localOption (lookupOption os :: HedgehogReplay)
 
 -- | Return the module name of the current callstack

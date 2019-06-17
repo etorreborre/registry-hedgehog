@@ -19,8 +19,8 @@ import           Protolude
 -- enumEmployeeStatus :: Enumerate (Tag "permanent" EmployeeStatus) -> Enumerate (Tag "temporary" EmployeeStatus) -> Enumerate EmployeeStatus
 -- enumEmployeeStatus g1 g2 = asum [fmap unTag g1, fmap unTag g2]
 
-makeEnums :: Name -> ExpQ
-makeEnums enumType = do
+makeEnumerates :: Name -> ExpQ
+makeEnumerates enumType = do
   info <- reify enumType
   case info of
     TyConI (DataD _context name _typeVars _kind constructors _deriving) -> do
@@ -31,3 +31,7 @@ makeEnums enumType = do
     other -> do
       qReport True ("can only create enumerates for an ADT, got: " <> show other)
       fail "enumerates creation failed"
+
+-- | Alias for makeEnumerates
+makeEnums :: Name -> ExpQ
+makeEnums = makeEnumerates
