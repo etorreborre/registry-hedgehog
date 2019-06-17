@@ -48,9 +48,9 @@ import           Test.Tasty.Runners   as Tasty (TestTree (..), foldSingle,
 
 -- | Create a Tasty test from a Hedgehog property
 prop :: HasCallStack => TestName -> PropertyT IO () -> TestTree
-prop name p =
+prop name p = withFrozenCallStack $
   let aModuleName = getModuleName
-  in  withFrozenCallStack . localOption (ModuleName (toS aModuleName)) $
+  in  localOption (ModuleName (toS aModuleName)) $
       testProperty name (Hedgehog.property p)
 
 -- | Create a Tasty test from a Hedgehog property called only once
@@ -199,7 +199,7 @@ runOnly p tests = do
   run tests `finally` unsetEnv "TASTY_PATTERN"
 
 -- | Typeclass to unify a simple test in a file like test_simple :: TestTree
---   and all the tests retrieved by tasty-discovery which have the type :: IO TestTree  
+--   and all the tests retrieved by tasty-discovery which have the type :: IO TestTree
 class Runnable t where
   runIt :: t -> IO TestTree
 
