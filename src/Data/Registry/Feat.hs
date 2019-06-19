@@ -15,6 +15,8 @@ module Data.Registry.Feat (
 , tweakEnumS
 , setEnum
 , setEnumS
+, setRandomEnumS
+, setRandomWithSizeEnumS
 , specializeEnum
 , specializeEnumS
 , modifyEnumS
@@ -57,7 +59,7 @@ import           Data.Map                        as Map (fromList)
 import           Data.Maybe                      as Maybe
 import           Data.Registry
 import           Data.Registry.Internal.Feat     (bconcat, breadthConcat)
-import           Data.Registry.Internal.Hedgehog (GenIO, liftGen)
+import           Data.Registry.Internal.Hedgehog (GenIO, liftGen, sampleWithSizeIO)
 import           Data.Registry.Internal.Types
 import           Data.Set                        as Set (fromList)
 import           Hedgehog
@@ -105,6 +107,17 @@ setEnum enumA = tweakUnsafe @(Enumerate a) (const enumA)
 -- | Set a specific enumerator on the registry the value of an enumerate in a given registry in a State monad
 setEnumS :: forall a m ins out . (Typeable a, MonadState (Registry ins out) m) => Enumerate a -> m ()
 setEnumS enumA = modify (setEnum enumA)
+
+-- | Set the values of an enumerate by generating those values with a generator
+setRandomEnumS :: forall a m ins out . (Show a, Typeable a, MonadState (Registry ins out) m, MonadIO m) => m ()
+setRandomEnumS = setRandomWithSizeEnumS @a 30
+
+-- | Set the values of an enumerate by generating those values with a generator using a given size
+setRandomWithSizeEnumS :: forall a m ins out . (Show a, Typeable a, MonadState (Registry ins out) m, MonadIO m) => Int -> m ()
+setRandomWithSizeEnumS size = do
+  r <- get
+  a <- liftIO $ sampleWithSizeIO size $ makeUnsafe @(GenIO a) r
+  setEnumS (pure a)
 
 -- | Specialize an enumerate in a given context
 specializeEnum :: forall a b ins out . (Typeable a, Typeable b, Contains (Enumerate a) out) => Enumerate b -> Registry ins out -> Registry ins out
@@ -207,10 +220,10 @@ enumNonEmptyMapOfMinMax min' max' gk gv = (\h t -> Map.fromList (h : t)) <$> enu
 enumToGen :: Enumerate a -> GenIO a
 enumToGen = makeGeneratorFromEnumerate Nothing
 
-enumToGenUntil :: Int64 -> Enumerate a -> GenIO a
+enumToGenUntil :: Int -> Enumerate a -> GenIO a
 enumToGenUntil = makeGeneratorFromEnumerate . Just
 
-makeGeneratorFromEnumerate :: Maybe Int64 -> Enumerate a -> GenIO a
+makeGeneratorFromEnumerate :: Maybe Int -> Enumerate a -> GenIO a
 makeGeneratorFromEnumerate maxSizeForEnumeration a = liftGen $
   GenT $ \currentSize@(Size size) seed ->
     case maxSizeForEnumeration of
@@ -223,13 +236,13 @@ makeGeneratorFromEnumerate maxSizeForEnumeration a = liftGen $
         pure (safeIndexWith a (fromIntegral size))
 
 -- | Draw a value uniformly from an enumerate where the size is bounded
-uniformWith :: Enumerate a -> Int64 -> Gen a
+uniformWith :: Enumerate a -> Int -> Gen a
 uniformWith as index =
   safeIndexWith as <$> Gen.integral (Range.constantFrom 0 0 (fromIntegral index))
 
 -- | Try to access the element at a given index.
 --   If the enumerate is too small cycle from the beginning
-safeIndexWith :: Enumerate a -> Int64 -> a
+safeIndexWith :: Enumerate a -> Int -> a
 safeIndexWith as index =
   let selected = selectParts (parts as) index
       selectedSize = fromIntegral $ sum (fmap fCard selected)
@@ -240,10 +253,10 @@ safeIndexWith as index =
       safeIndexWith as (index - selectedSize)
 
 -- | Select finite parts until we go above a given index
-selectParts :: [Finite a] -> Int64 -> [Finite a]
+selectParts :: [Finite a] -> Int -> [Finite a]
 selectParts = go []
   where
-    go :: [Finite a] -> [Finite a] -> Int64 -> [Finite a]
+    go :: [Finite a] -> [Finite a] -> Int -> [Finite a]
     go res [] _ = res
     go res (f:fs) index =
       if fromIntegral index < fCard f then

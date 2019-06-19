@@ -18,6 +18,7 @@ module Data.Registry.Internal.Hedgehog (
 -- utilities
 , liftGen
 , sampleIO
+, sampleWithSizeIO
 ) where
 
 import           Control.Monad.Morph
@@ -96,16 +97,20 @@ distinctWith ref g = GenT $ \size seed -> do
 
 -- * UTILITIES
 
--- | Sample GenIO values
+-- | Sample a GenIO value with size 30 by default
 sampleIO :: GenIO a -> IO a
-sampleIO gen =
+sampleIO = sampleWithSizeIO 30
+
+-- | Sample a GenIO value with a specific size
+sampleWithSizeIO :: Int -> GenIO a -> IO a
+sampleWithSizeIO size gen =
     let
       loop n =
         if n <= 0 then
           panic "Hedgehog.Gen.sample: too many discards, could not generate a sample"
         else do
           seed <- Seed.random
-          NodeT r _  <- runTreeT $ evalGenT 30 seed gen
+          NodeT r _  <- runTreeT $ evalGenT (Size size) seed gen
           case r of
             Nothing ->
               loop (n - 1)
