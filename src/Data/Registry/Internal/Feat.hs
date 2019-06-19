@@ -2,12 +2,35 @@ module Data.Registry.Internal.Feat (
   bconcat
 , breadthConcat
 , breadthSelection
+, limitPartsSize
+, limitPartsSizeWith
 ) where
 
 import           Prelude             ((!!))
 import           Protolude
 import           Test.Feat.Enumerate
 
+-- | Limit the size of an enumerate so that each part has a maximum number of elements
+limitPartsSize :: Integer -> Enumerate a -> Enumerate a
+limitPartsSize maxSize = limitPartsSizeWith (repeat maxSize)
+
+-- | Limit the size of an enumerate with a distribution of maximum values
+limitPartsSizeWith :: [Integer] -> Enumerate a -> Enumerate a
+limitPartsSizeWith maxSizes e = fromParts (uncurry limitPartSize <$> mzip 0 maxSizes (parts e))
+
+-- | Zip with default values from monoids for padding
+--   from https://stackoverflow.com/questions/22403029/how-to-zip-lists-with-different-length
+mzip :: a -> [a] -> [b] -> [(a, b)]
+mzip defaultA (a:as) (b:bs) = (a, b) : mzip defaultA as bs
+mzip defaultA []     (b:bs) = (defaultA, b) : mzip defaultA [] bs
+mzip _ _ _                  = []
+
+-- | Limit the size of a part
+limitPartSize :: Integer -> Finite a -> Finite a
+limitPartSize maxSize (Finite card sel) = Finite (min card maxSize) sel
+
+-- | Concatenate enumerates in a breadth-first manner
+--  IMPORTANT NOTE: this only works if those enumerates have finite parts!
 bconcat :: [Enumerate a] -> Enumerate a
 bconcat []    = mempty
 bconcat [a]   = a

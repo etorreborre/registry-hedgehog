@@ -5,16 +5,19 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
-module Test.Data.Registry.TestingFeatSpec where
+module Test.Data.Registry.FeatSpec where
 
 import           Data.Registry
 import           Data.Registry.Feat
 import           Data.Registry.Feat.TH
-import           Data.Registry.Hedgehog
-import           Protolude                        hiding (C1, D1, list)
+import           Data.Registry.Hedgehog           (GenIO, forAllT, listOf, listOfMinMax)
+import           Hedgehog.Gen                     hiding (print)
+import           Hedgehog.Range
+import           Prelude                          as Prelude (show)
+import           Protolude                        as P hiding (C1, D1, check, list)
 import           Test.Data.Registry.Company
 import           Test.Data.Registry.EnumerateData
-import           Test.Tasty.Hedgehogx
+import           Test.Tasty.Hedgehogx             hiding (check)
 
 test_enumSizedListOf = test "we can enumerate a list of elements with a fixed size" $ do
   let listOfSize2 = enumSizedListOf 2 enumInt
@@ -81,7 +84,33 @@ test_bconcat = test "bconcat must collect values in a breadth first order" $ do
 
   valuesWith values === [(12, [1..12])]
 
+test_limit_size = prop "the number of values of the parts of an enumerate can be limited" $ do
+  distribution         <- forall @[Integer]
+  Enumerated enumerate <- forall @(Enumerated Int)
+  let limited = limitPartsSizeWith distribution enumerate
+
+  -- to visualize results
+  print $ "distribution " <> (P.show distribution :: Text)
+  print $ "original     " <> (P.show (valuesWith enumerate) :: Text)
+  print $ "limited      " <> (P.show (valuesWith limited) :: Text)
+
+  check distribution (fmap fst (valuesWith limited))
+
+  where
+    check (d:rest) (l:ps) = do
+      (l <= d) === True
+      check rest ps
+    check _ _ = success
+
 -- * HELPERS
+
+newtype Enumerated a = Enumerated { _enumerated :: Enumerate a }
+
+instance Show a => Show (Enumerated a) where
+  show (Enumerated e) = Prelude.show (valuesWith e)
+
+instance Eq a => Eq (Enumerated a) where
+  Enumerated e1 == Enumerated e2 = valuesWith e1 == valuesWith e2
 
 enumInt :: Enumerate Int
 enumInt = bconcat (pure <$> [1..2])
@@ -93,7 +122,15 @@ enumText :: Enumerate Text
 enumText = pure "abc" <|> pure "xyz"
 
 registry =
-     fun (enumListOf @EmployeeStatus)
+     $(makeEnumerates ''EmployeeStatus)
+  <: $(makeEnumerates ''T)
+  <: $(makeEnumerates ''Bug)
+  <: $(makeEnumerates ''A1)
+  <: $(makeEnumerates ''B1)
+  <: $(makeEnumerates ''C1)
+  <: $(makeEnumerates ''D1)
+  <: $(makeEnumerates ''Fuzzy)
+  <: fun (enumListOf @EmployeeStatus)
   <: fun (enumListOfMinMax @Bool 0 10)
   <: fun (enumPairOf @Bool @Bool)
   <: fun enumInt
@@ -102,15 +139,29 @@ registry =
   <: fun (enumNonEmptyOfMinMax @Bool 1 1)
   <: fun (enumPairOf @Text @Int)
   <: fun enumText
-  <: $(makeEnums ''EmployeeStatus)
-  <: $(makeEnums ''T)
-  <: $(makeEnums ''Bug)
-  <: $(makeEnums ''A1)
-  <: $(makeEnums ''B1)
-  <: $(makeEnums ''C1)
-  <: $(makeEnums ''D1)
-  <: $(makeEnums ''Fuzzy)
+  <: fun genInt
+  <: fun genInteger
+  <: fun genEnumeratedInt
+  <: fun genBool
+  <: fun (listOf @Int)
+  <: fun (listOfMinMax @Integer 1 20)
 
+genInt :: GenIO Int
+genInt = integral (linear 1 10)
+
+genInteger :: GenIO Integer
+genInteger = integral (linear 1 10)
+
+genEnumeratedInt :: GenIO (Enumerated Int)
+genEnumeratedInt = do
+  listOfInts <- listOf (listOf genInt)
+  pure (Enumerated (fromParts (mconcat . fmap pure <$> listOfInts)))
+
+genBool :: GenIO Bool
+genBool = choice [pure True, pure False]
 
 enumAll :: forall a . _ => PropertyT IO a
 enumAll = withFrozenCallStack $ forAllT (enumToGen $ enumWith @a registry)
+
+forall :: forall a . _ => PropertyT IO a
+forall = withFrozenCallStack $ forAllT (makeUnsafe @(GenIO a) registry)

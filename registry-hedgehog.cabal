@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8956fc6c5f994871d001cd1e71134197d65432768920fc73e9c4086f94467449
+-- hash: 246e758a2a7a163f796b4cdfb9fe7ecd1c55fcd2e556bf434333ff8ef4687057
 
 name:           registry-hedgehog
 version:        0.2.0.3
@@ -65,9 +65,9 @@ test-suite spec
       AutoDiscoveredSpecs
       Test.Data.Registry.Company
       Test.Data.Registry.EnumerateData
+      Test.Data.Registry.FeatSpec
       Test.Data.Registry.Generators
       Test.Data.Registry.HedgehogSpec
-      Test.Data.Registry.TestingFeatSpec
       Paths_registry_hedgehog
   hs-source-dirs:
       test

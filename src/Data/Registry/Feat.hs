@@ -58,7 +58,7 @@ import           Data.List.NonEmpty
 import           Data.Map                        as Map (fromList)
 import           Data.Maybe                      as Maybe
 import           Data.Registry
-import           Data.Registry.Internal.Feat     (bconcat, breadthConcat)
+import           Data.Registry.Internal.Feat     (bconcat, breadthConcat, limitPartsSizeWith, limitPartsSize)
 import           Data.Registry.Internal.Hedgehog (GenIO, liftGen, sampleWithSizeIO)
 import           Data.Registry.Internal.Types
 import           Data.Set                        as Set (fromList)

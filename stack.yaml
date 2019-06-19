@@ -4,7 +4,7 @@ packages:
 - '.'
 
 extra-deps:
-  - registry-0.1.4.2
+  - registry-0.1.6.2
   - testing-type-modifiers-0.1.0.1
 
   - github: etorreborre/tasty-hedgehog
