@@ -64,7 +64,7 @@ import           Hedgehog
 import           Hedgehog.Gen                    as Gen (integral)
 import           Hedgehog.Internal.Gen           as Gen (GenT (..), runGenT)
 import           Hedgehog.Internal.Property      (forAllT)
-import           Hedgehog.Range                  as Range (Size (..), linear)
+import           Hedgehog.Range                  as Range (Size (..), constantFrom)
 import           Protolude                       as P
 import           Test.Feat.Access                (indexWith, selectWith, valuesWith, skipping, bounded, sizeRange)
 import           Test.Feat.Enumerate
@@ -225,7 +225,7 @@ makeGeneratorFromEnumerate maxSizeForEnumeration a = liftGen $
 -- | Draw a value uniformly from an enumerate where the size is bounded
 uniformWith :: Enumerate a -> Int64 -> Gen a
 uniformWith as index =
-  safeIndexWith as <$> Gen.integral (Range.linear 0 (fromIntegral index))
+  safeIndexWith as <$> Gen.integral (Range.constantFrom 0 0 (fromIntegral index))
 
 -- | Try to access the element at a given index.
 --   If the enumerate is too small cycle from the beginning
