@@ -71,7 +71,7 @@ import           Hedgehog.Internal.Gen           as Gen
 import           Hedgehog.Internal.Property      (forAllT)
 import           Hedgehog.Range
 import           Protolude                       as P
-
+import           System.IO.Unsafe
 
 -- * CREATION / TWEAKING OF REGISTRY GENERATORS
 
@@ -200,44 +200,49 @@ nonEmptyMapOf gk gv = do
 -- * CHOOSING VALUES DETERMINISTICALLY
 
 -- | Set a cycling chooser for a specific data type
-setCycleChooser :: forall a ins out . (Typeable a, Contains (GenIO a) out) => Registry ins out -> IO (Registry ins out)
-setCycleChooser r = do
+{-# NOINLINE setCycleChooser #-}
+setCycleChooser :: forall a ins out . (Typeable a, Contains (GenIO a) out) => Registry ins out -> Registry ins out
+setCycleChooser r = unsafePerformIO $ do
   c <- cycleChooser
   pure $ specializeValTo @GenIO @(GenIO a) c r
 
 -- | Set a cycling chooser for a specific data type
+{-# NOINLINE setCycleChooserS #-}
 setCycleChooserS :: forall a m ins out . (Typeable a, Contains (GenIO a) out, MonadState (Registry ins out) m, MonadIO m) => m ()
-setCycleChooserS = do
-  r <- get
-  r' <- liftIO $ setCycleChooser @a r
-  put r'
+setCycleChooserS =
+  let c = unsafePerformIO cycleChooser
+  in do r <- get
+        let r' = specializeValTo @GenIO @(GenIO a) c r
+        put r'
 
 -- * MAKING DISTINCT VALUES
 
 -- | Generate distinct values for a specific data type
-setDistinct :: forall a ins out . (Eq a, Typeable a, Contains (GenIO a) out) => Registry ins out -> IO (Registry ins out)
-setDistinct r = do
-  ref <- newIORef []
-  let g = makeFast @(GenIO a) r
-  pure $ setGenIO (distinctWith ref g) r
+{-# NOINLINE setDistinct #-}
+setDistinct :: forall a ins out . (Eq a, Typeable a, Contains (GenIO a) out) => Registry ins out -> Registry ins out
+setDistinct = setDistinctWithRef @a (unsafePerformIO $ newIORef [])
+
+setDistinctWithRef :: forall a ins out . (Eq a, Typeable a, Contains (GenIO a) out) => IORef [a] -> Registry ins out -> Registry ins out
+setDistinctWithRef ref r = setGenIO (distinctWith ref (makeFast @(GenIO a) r)) r
 
 -- | Generate distinct values for a specific data type
+{-# NOINLINE setDistinctS #-}
 setDistinctS :: forall a m ins out . (Eq a, Typeable a, Contains (GenIO a) out, MonadState (Registry ins out) m, MonadIO m) => m ()
-setDistinctS = do
-  r <- get
-  r' <- liftIO $ setDistinct @a r
-  put r'
+setDistinctS =
+  let ref = unsafePerformIO $ newIORef []
+  in  modify (setDistinctWithRef @a ref)
 
 -- | Generate distinct values for a specific data type, when used inside another data type
-setDistinctFor :: forall a b ins out . (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out) => Registry ins out -> IO (Registry ins out)
-setDistinctFor r = do
-  ref <- newIORef []
-  let g = makeFast @(GenIO b) r
-  pure $ specializeGenIO @a (distinctWith ref g) r
+{-# NOINLINE setDistinctFor #-}
+setDistinctFor :: forall a b ins out . (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out) => Registry ins out -> Registry ins out
+setDistinctFor = setDistinctForWithRef @a @b (unsafePerformIO $ newIORef [])
+
+setDistinctForWithRef :: forall a b ins out . (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out) => IORef [b] -> Registry ins out -> Registry ins out
+setDistinctForWithRef ref r = specializeGenIO @a (distinctWith ref (makeFast @(GenIO b) r)) r
 
 -- | Generate distinct values for a specific data type, when used inside another data type
+{-# NOINLINE setDistinctForS #-}
 setDistinctForS :: forall a b m ins out . (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out, MonadState (Registry ins out) m, MonadIO m) => m ()
-setDistinctForS = do
-  r <- get
-  r' <- liftIO $ setDistinctFor @a @b r
-  put r'
+setDistinctForS =
+  let ref = unsafePerformIO $ newIORef []
+  in  modify (setDistinctForWithRef @a @b ref)
