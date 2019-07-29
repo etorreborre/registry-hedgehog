@@ -15,4 +15,7 @@ The main modules are:
  - `Data.Registry.Hedgehog`: functions used to modify a registry containing generators
  - `Test.Tasty.Hedgehogx`: supplement to the `Test.Tasty.Hedgehog` module to declare and modify tests/properties
 
-There is for now a small tutorial in the form of a [small specification](./test/Test/Data/Registry/HedgehogSpec.hs)
+#### Tutorials and examples
+
+ - some examples of usage in the form of a [small specification](./test/Test/Data/Registry/HedgehogSpec.hs)
+ - [tutorial with a data model](./doc/tutorial.md)
