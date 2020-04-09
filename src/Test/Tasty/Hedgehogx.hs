@@ -34,7 +34,6 @@ import           Hedgehog             as Hedgehog hiding (test, (===))
 import qualified Hedgehog             as Hedgehog ((===))
 import           Hedgehog.Gen         as Hedgehog hiding (discard, print)
 import           Prelude              (String)
-import qualified Prelude              as Prelude
 import           Protolude            hiding (SrcLoc, empty, toList, (.&.))
 import           System.Environment
 import           Test.Tasty           as Tasty
@@ -199,7 +198,7 @@ runOnly p tests = do
   run tests `finally` unsetEnv "TASTY_PATTERN"
 
 -- | Typeclass to unify a simple test in a file like test_simple :: TestTree
---   and all the tests retrieved by tasty-discovery which have the type :: IO TestTree  
+--   and all the tests retrieved by tasty-discovery which have the type :: IO TestTree
 class Runnable t where
   runIt :: t -> IO TestTree
 

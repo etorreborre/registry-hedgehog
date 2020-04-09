@@ -1,12 +1,12 @@
-resolver: lts-12.21
+resolver: lts-15.7
 
 packages:
 - '.'
 
 extra-deps:
-  - registry-0.1.6.2
-  - hedgehog-1.0
-  - tasty-hedgehog-1.0.0.1
+  - registry-0.1.7.1
+  - hedgehog-1.0.2
+  - tasty-hedgehog-1.0.0.2
 
 flags: {}
 
