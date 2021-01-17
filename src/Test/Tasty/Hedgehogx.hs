@@ -1,47 +1,58 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-
 
 This module unifies property based testing with Hedgehog and one-off tests.
 
 -}
-module Test.Tasty.Hedgehogx (
-  module Hedgehog
-, module Tasty
-, gotException
-, groupByModuleName
-, minTestsOk
-, mustBe
-, noShrink
-, prop
-, run
-, runOnly
-, test
-, withSeed
-, (===)
-) where
+module Test.Tasty.Hedgehogx
+  ( module Hedgehog,
+    module Tasty,
+    module Test.Tasty.HedgehogTest,
+    -- * Tests definition
+    prop,
+    test,
+    -- * Tests settings
+    minTestsOk,
+    noShrink,
+    withSeed,
+    -- * Running tests
+    run,
+    runOnly,
+    -- * Assertions
+    gotException,
+    -- * Display
+    printDifference,
+    display,
+  )
+where
 
-import           Data.Maybe           (fromJust)
-import           Data.MultiMap        hiding (foldr)
-import           GHC.Stack
-import           Hedgehog             as Hedgehog hiding (test, (===))
-import qualified Hedgehog             as Hedgehog ((===))
-import           Hedgehog.Gen         as Hedgehog hiding (discard, print)
-import           Prelude              (String)
-import           Protolude            hiding (SrcLoc, empty, toList, (.&.))
-import           System.Environment
-import           Test.Tasty           as Tasty
-import           Test.Tasty.Hedgehog  as Tasty
-import           Test.Tasty.Options   as Tasty
-import           Test.Tasty.Providers as Tasty (singleTest)
-import           Test.Tasty.Runners   as Tasty (TestTree (..), foldSingle,
-                                                foldTestTree, trivialFold)
+import qualified Data.Text as T
+import GHC.Stack
+import Hedgehog hiding (test)
+import Hedgehog.Gen as Hedgehog hiding (discard, print)
+import Hedgehog.Internal.Config (UseColor (EnableColor))
+import Hedgehog.Internal.Property (Coverage (..), Diff (..), DiscardCount (..), ShrinkCount (..), TestCount (..))
+import Hedgehog.Internal.Report
+import Hedgehog.Internal.Show (mkValue, valueDiff)
+import Protolude hiding (SrcLoc, empty, toList, (.&.))
+import System.Environment
+import Test.Tasty as Tasty
+import Test.Tasty.HedgehogTest
+import Test.Tasty.Options as Tasty
+import Test.Tasty.Providers as Tasty (singleTest)
+import Test.Tasty.Runners as Tasty
+  ( TestTree (..),
+    foldSingle,
+    foldTestTree,
+    trivialFold,
+  )
+import Prelude (String)
 
 -- * TESTS AND PROPERTIES
 
@@ -49,141 +60,59 @@ import           Test.Tasty.Runners   as Tasty (TestTree (..), foldSingle,
 prop :: HasCallStack => TestName -> PropertyT IO () -> TestTree
 prop name p =
   let aModuleName = getModuleName
-  in  withFrozenCallStack . localOption (ModuleName (toS aModuleName)) $
-      testProperty name (Hedgehog.property p)
+   in withFrozenCallStack . localOption (ModuleName (toS aModuleName)) $
+        testProperty name (Hedgehog.property p)
 
 -- | Create a Tasty test from a Hedgehog property called only once
 test :: HasCallStack => TestName -> PropertyT IO () -> TestTree
 test name p = withFrozenCallStack (minTestsOk 1 . noShrink $ prop name p)
 
--- * ASSERTIONS
+-- * SETTING TEST OPTIONS
 
--- | Assert that an exception is thrown
-gotException :: forall a . (HasCallStack, Show a) => a -> PropertyT IO ()
-gotException a = withFrozenCallStack $ do
-  res <- liftIO (try (evaluate a) :: IO (Either SomeException a))
-  case res of
-    Left _  -> assert True
-    Right _ -> annotateShow ("excepted an exception" :: Text) >> assert False
-
-
--- | Redefinition of Hedgehog's === operator to add better source file information
---
---   It adds a link to the source file which is conforms to
---   output of GHC.Exception. See makeSourceLink
---   It also displays the actual and expected values in a compact form before
---   the pretty-printed form provided by Hedgehog
-infix 4 ===
-(===) :: (MonadTest m, Eq a, Show a, HasCallStack) => a -> a -> m ()
-actual === expected = withFrozenCallStack $ do
-  displayActualAndExpectedValues actual expected
-  actual Hedgehog.=== expected
-
--- | An equality assertion which does not try to do a smart diffs for cases
---   where the output is too large.
-mustBe :: (MonadTest m, Eq a, Show a, HasCallStack) => a -> a -> m ()
-actual `mustBe` expected = do
-  ok <- eval (actual == expected)
-  if ok then
-    success
-  else withFrozenCallStack $ do
-    displayActualAndExpectedValues actual expected
-    failure
-
--- | Display actual and expected values as a footnote, using the Show a instance
-displayActualAndExpectedValues :: (Show a, MonadTest m, HasCallStack) => a -> a -> m ()
-displayActualAndExpectedValues actual expected =
-  withFrozenCallStack $ do
-    footnote makeSourceLink
-    footnote "\n"
-    footnote $ "Expected\n" <> (show expected)
-    footnote "\n"
-    footnote $ "Actual\n" <> (show actual)
-
--- | This function creates a link to the source file which is conforms to
---   the output of GHC.Exception and thus can be navigated to with some text editors (like emacs)
---   by specifying a regular expression like
---   (".*error, called at \\(.*\\.hs\\):\\([0-9]+\\):\\([0-9]+\\) in .*" 1 2 3 2 1)
---      (" +\\(.*\\.hs\\):\\([0-9]+\\):$" 1 2 nil 2 1)
-makeSourceLink :: (HasCallStack) => String
-makeSourceLink =
-  case getCallStack callStack of
-    [] -> "FAIL!"
-    (f, SrcLoc {..}) : _ ->
-      f ++ " error, called at " ++
-      foldr (++) ""
-      [ srcLocFile, ":"
-      , show srcLocStartLine, ":"
-      , show srcLocStartCol, " in "
-      , srcLocPackage, ":", srcLocModule
-      ]
-
-
--- * SETTINGS
-
--- | Set a mininum number of tests to be successful on a property
+-- | Set the minimum number of tests which must be successful for a property to pass
 minTestsOk :: Int -> TestTree -> TestTree
 minTestsOk n = localOption (HedgehogTestLimit (Just (toEnum n :: TestLimit)))
 
--- | Don't shrink failures
+-- | Do not shrink failures
 noShrink :: TestTree -> TestTree
 noShrink = localOption (HedgehogShrinkLimit (Just (0 :: ShrinkLimit)))
 
--- | Run a property with a specify seed. You can copy and paste the exact string
---   which Hedgehog outputs when there is a failure
+-- | Execute a property with a specific seed
 withSeed :: Prelude.String -> TestTree -> TestTree
-withSeed seed = localOption (fromJust (parseValue seed :: Maybe HedgehogReplay))
+withSeed seed tree =
+  case parseValue seed of
+    Nothing -> prop ("cannot parse seed " <> seed) failure
+    Just (s :: HedgehogReplay) -> localOption s tree
 
--- * GROUPING
+-- * ASSERTIONS
 
--- | This allows the discovery of Hedgehog properties and their grouping by module name
---   in the test report.
---   Extract the ModuleName option value for a given test and
---   group all the tests with that option into the same test group
-groupByModuleName :: TestTree -> TestTree
-groupByModuleName testTree =
-  let grouped = assocs $ foldTestTree (trivialFold { foldSingle = \os n t ->
-        let (ModuleName aModuleName) = lookupOption os :: ModuleName
-        in insert (toS aModuleName) (setOptionSet os $ singleTest n t) empty
-        }) mempty testTree
-  in  TestGroup "All" (uncurry TestGroup <$> grouped)
+-- | Assert that an exception is thrown
+gotException :: forall a. (HasCallStack, Show a) => a -> PropertyT IO ()
+gotException a = withFrozenCallStack $ do
+  res <- liftIO (try (evaluate a) :: IO (Either SomeException a))
+  case res of
+    Left _ -> assert True
+    Right _ -> annotateShow ("excepted an exception" :: Text) >> assert False
 
-instance (Ord k) => Semigroup (MultiMap k v) where
-  (<>) m1 m2 = fromList (toList m1 <> toList m2)
+-- * REPORTING
 
-instance (Ord k) => Monoid (MultiMap k v) where
-  mempty = empty
-  mappend = (<>)
+printDifference :: (MonadIO m, Show a, Show b, HasCallStack) => a -> b -> m ()
+printDifference actual expected = withFrozenCallStack $ do
+  let failureReport = mkFailure (Size 0) (Seed 0 0) (ShrinkCount 0) Nothing Nothing "" (failureDifference actual expected) []
+  report <- renderResult EnableColor Nothing (Report (TestCount 0) (DiscardCount 0) (Coverage mempty) (Failed failureReport))
+  putText (T.unlines . drop 3 . T.lines . toS $ report)
 
--- | This is unfortunate. Due to the API for `foldTestTree` in Tasty
---   giving back the current `OptionSet` applicable to a single test
---   it is not possible to re-set those option values on that test
---   without listing them exhaustively. This means
---   that if other options are set on tests in that file, they need to be
---   added in that function
-setOptionSet :: OptionSet -> TestTree -> TestTree
-setOptionSet os =
-  localOption (lookupOption os :: HedgehogTestLimit) .
-  localOption (lookupOption os :: HedgehogShrinkLimit) .
-  localOption (lookupOption os :: HedgehogReplay)
+failureDifference :: (Show a, Show b, HasCallStack) => a -> b -> Maybe Diff
+failureDifference x y = withFrozenCallStack $
+  case valueDiff <$> mkValue x <*> mkValue y of
+    Nothing ->
+      Nothing
+    Just d ->
+      withFrozenCallStack $
+        Just $ Diff "━━━ Failed (" "- lhs" ") (" "+ rhs" ") ━━━" d
 
--- | Return the module name of the current callstack
-getModuleName :: HasCallStack => Prelude.String
-getModuleName =
-  case getCallStack  callStack of
-    ((_, loc):_) -> srcLocModule loc
-    _            -> "root"
-
--- | Option describing the current module name
-newtype ModuleName = ModuleName Text deriving (Eq, Show)
-
--- | This option is not used on the command line, it is just used to annotate test groups
-instance IsOption ModuleName where
-  defaultValue = ModuleName "root"
-  parseValue = fmap ModuleName . safeRead
-  optionName = pure "module-name"
-  optionHelp = pure "internal option used to group tests into the same module"
-  optionCLParser = mkFlagCLParser mempty (ModuleName "root")
+display :: (Show a, Monad m, HasCallStack) => a -> PropertyT m a
+display a = withFrozenCallStack (annotateShow a $> a)
 
 -- * GHCi run functions
 

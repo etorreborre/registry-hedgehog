@@ -1,30 +1,28 @@
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE QuasiQuotes     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Registry.Internal.TH where
 
-import           Control.Monad.Fail              (fail)
-import           Data.Registry.Internal.Hedgehog
-import           Data.Text                       (splitOn, toLower)
-import           Language.Haskell.TH
-import           Language.Haskell.TH.Syntax
-import           Prelude                         (last)
-import           Protolude                       hiding (Type)
+import Control.Monad.Fail (fail)
+import Data.Registry.Internal.Hedgehog
+import Data.Text (splitOn, toLower)
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
+import Protolude hiding (Type)
+import Prelude (last)
 
 -- | Create a generator for selecting between constructors of an ADT
 --   One parameter is a GenIO Chooser in order to be able to later on
 --   switch the selection strategy
 makeSelectGenerator :: Name -> [Con] -> ExpQ
 makeSelectGenerator name constructors = do
-  chooserParam <- [p| (chooser :: GenIO Chooser) |]
+  chooserParam <- [p|(chooser :: GenIO Chooser)|]
   otherParams <- traverse (parameterFor name) constructors
   untaggedGenerators <- traverse untagGenerator constructors
   expression <- appE (appE (varE (mkName "chooseOne")) (varE (mkName "chooser"))) (pure $ ListE untaggedGenerators)
   pure $ LamE (chooserParam : otherParams) expression
-
   where
-    -- | Create a parameters for the selection function
     parameterFor :: Name -> Con -> Q Pat
     parameterFor typeName constructor = do
       constructorParam <- constructorParameterName constructor
@@ -36,7 +34,7 @@ makeSelectGenerator name constructors = do
 -- AppE (AppTypeE (VarE Data.Registry.Lift.tag) (LitT (StrTyLit "permanent"))) (ConE Test.Data.Registry.Generators.Permanent)
 makeConstructorGenerator :: Con -> ExpQ
 makeConstructorGenerator constructor = do
-  constructorTag  <- tagName constructor
+  constructorTag <- tagName constructor
   constructorType <- nameOf constructor
   appE (appTypeE (varE (mkName "tag")) (litT (strTyLit (show constructorTag)))) (conE constructorType)
 
@@ -67,7 +65,7 @@ constructorName constructor = do
 -- | The name of a given constructor
 nameOf :: Con -> Q Name
 nameOf (NormalC n _) = pure n
-nameOf (RecC n _)    = pure n
+nameOf (RecC n _) = pure n
 nameOf other = do
   qReport True ("we can only create generators for normal constructors and records, got: " <> show other)
   fail "generators creation failed"
@@ -75,7 +73,7 @@ nameOf other = do
 -- | The list of types necessary to create a given constructor
 typesOf :: Con -> Q [Type]
 typesOf (NormalC _ types) = pure (snd <$> types)
-typesOf (RecC _ types)    = pure $ (\(_,_,t) -> t)  <$> types
+typesOf (RecC _ types) = pure $ (\(_, _, t) -> t) <$> types
 typesOf other = do
   qReport True ("we can only create generators for normal constructors and records, got: " <> show other)
   fail "generators creation failed"
@@ -86,12 +84,10 @@ typesOf other = do
 assembleGeneratorsToRegistry :: Exp -> [Exp] -> ExpQ
 assembleGeneratorsToRegistry _ [] =
   fail "generators creation failed"
-
 assembleGeneratorsToRegistry selectorGenerator [g] =
   let r = appendExpressions (genFunOf (pure g)) (funOf (pure selectorGenerator))
-  in  appendExpressions r (genFunOf (varE (mkName "choiceChooser")))
-
-assembleGeneratorsToRegistry selectorGenerator (g:gs) =
+   in appendExpressions r (genFunOf (varE (mkName "choiceChooser")))
+assembleGeneratorsToRegistry selectorGenerator (g : gs) =
   appendExpressions (genFunOf (pure g)) (assembleGeneratorsToRegistry selectorGenerator gs)
 
 appendExpressions :: ExpQ -> ExpQ -> ExpQ

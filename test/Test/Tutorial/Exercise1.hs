@@ -1,26 +1,26 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Test.Tutorial.Exercise1 where
 
-import           Data.Registry
-import           Data.Registry.Hedgehog
-import           Hedgehog                hiding (test)
-import           Hedgehog.Gen
-import           Hedgehog.Range
-import           Protolude
-import           Test.Tutorial.DataModel
+import Data.Registry
+import Data.Registry.Hedgehog
+import Hedgehog hiding (test)
+import Hedgehog.Gen
+import Hedgehog.Range
+import Protolude
+import Test.Tutorial.DataModel
 
 registry :: Registry _ _
 registry =
-     genFun Company
-  <: genFun Department
-  <: genFun Employee
-  <: genVal genEmployeeStatus
-  <: genVal genInt
-  <: genVal genText
+  genFun Company
+    <: genFun Department
+    <: genFun Employee
+    <: genVal genEmployeeStatus
+    <: genVal genInt
+    <: genVal genText
 
 genInt :: Gen Int
 genInt = integral (linear 1 3)

@@ -1,29 +1,54 @@
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE PartialTypeSignatures      #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Test.Data.Registry.HedgehogSpec where
 
-import           Control.Monad.Morph (hoist)
-import           Data.IORef
-import           Data.Registry
-import           Data.Registry.Hedgehog
-import           Hedgehog.Internal.Gen         hiding (print)
-import           Hedgehog.Range
-import           Hedgehog.Gen as Gen
-import           Protolude                     hiding (list)
-import           System.IO.Unsafe
-import           Test.Data.Registry.Company
-import           Test.Data.Registry.Generators
-import           Test.Tasty.Hedgehogx
-import           Hedgehog.Internal.Seed as Seed (random)
-import           Hedgehog.Internal.Tree as Tree (NodeT (..), runTreeT)
-
+import Control.Monad.Morph (hoist)
+import Data.IORef
+import Data.Registry
+import Data.Registry.Hedgehog
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Hedgehog.Gen as Gen
+import Hedgehog.Internal.Gen hiding (print)
+import Hedgehog.Internal.Seed as Seed (random)
+import Hedgehog.Internal.Tree as Tree (NodeT (..), runTreeT)
+import Hedgehog.Range
+import Protolude
+  ( Applicative (pure),
+    Bool (True),
+    Eq,
+    Foldable (length),
+    IO,
+    Int,
+    Maybe (Just, Nothing),
+    Monad ((>>)),
+    MonadIO (..),
+    MonadState (get, put),
+    Num ((+), (-)),
+    Ord ((<=), (>=)),
+    Show,
+    State,
+    Text,
+    evalState,
+    flip,
+    head,
+    lift,
+    panic,
+    ($),
+    (.),
+    (<$>),
+  )
+import System.IO.Unsafe
+import Test.Data.Registry.Company
+import Test.Data.Registry.Generators
+import Test.Tasty.Hedgehogx
+
 -- * This specification shows the usage of several features of this library
+
 --   First of all you will notice that if you run `stack test`
 --   all the properties of this file will be grouped under the Test.Data.Registry.HedgehogSpec test group
 
@@ -68,59 +93,67 @@ test_company_1 =
 
 -- Let's create some registry modifiers to constrain the generation
 setOneDepartment = addFunS $ listOfMinMax @Department 1 1
-setOneEmployee   = addFunS $ listOfMinMax @Employee 1 1
+
+setOneEmployee = addFunS $ listOfMinMax @Employee 1 1
+
 setSmallCompany = setOneEmployee >> setOneDepartment
 
 test_small_company =
-  prop "a small company has just one department and one employee" $ runS generators $ do
-    setSmallCompany
-    company <- forallS @Company
-    length (departments company) === 1
-    let Just d = head $ departments company
-    length (employees d) === 1
+  prop "a small company has just one department and one employee" $
+    runS generators $ do
+      setSmallCompany
+      company <- forallS @Company
+      length (departments company) === 1
+      let Just d = head $ departments company
+      length (employees d) === 1
 
 -- * We can also specialize some generators in a given context
+
 --   For example we might want to generate shorter department names even
 --   if Department is using Text values. To do this we specialize the Text
 --   generator in the context of a Gen Department
 
 genDepartmentName = T.take 5 . T.toUpper <$> genText
+
 setDepartmentName = specializeGenS @Department genDepartmentName
 
 test_with_better_department_name = noShrink $
-  prop "a department must have a short capitalized name" $ runS generators $ do
-    setSmallCompany
-    setDepartmentName
-    company <- forallS @Company
+  prop "a department must have a short capitalized name" $
+    runS generators $ do
+      setSmallCompany
+      setDepartmentName
+      company <- forallS @Company
 
-    -- uncomment to print the department names and inspect them
-    -- print company
-    let Just d = head $ departments company
-    (T.length (departmentName d) <= 5) === True
+      -- uncomment to print the department names and inspect them
+      -- print company
+      let Just d = head $ departments company
+      (T.length (departmentName d) <= 5) === True
 
 -- * It would be also very nice to have stateful generation where we can cycle
+
 --   across different constructors for a given data type
 
 test_cycle_constructors =
-  prop "we can cycle deterministically across all the constructors of a data type" $ runS generators $ do
-    setCycleChooserS @EmployeeStatus
-    -- uncomment to check
-    -- collect =<< forallS @EmployeeStatus
-    success
+  prop "we can cycle deterministically across all the constructors of a data type" $
+    runS generators $ do
+      setCycleChooserS @EmployeeStatus
+      -- uncomment to check
+      -- collect =<< forallS @EmployeeStatus
+      success
 
 -- We can also make sure we generate distinct values for a given type
 test_distinct_values =
-  prop "we can generate distinct values for a given data type when used in a specific context" $ runS generators $ do
-   setDistinctForS @Department @Text
-   -- uncomment to check
-   -- collect =<< departmentName <$> forallS @Department
-   success
-
+  prop "we can generate distinct values for a given data type when used in a specific context" $
+    runS generators $ do
+      setDistinctForS @Department @Text
+      -- uncomment to check
+      -- collect =<< departmentName <$> forallS @Department
+      success
 
 test_ints_generator =
   prop "we can generate ints" $ do
-   n <- forAllT distinctInt
-   n === n -- collect n
+    n <- forAllT distinctInt
+    n === n -- collect n
 
 test_fresh = minTestsOk 10000 $
   prop "we can generate terms with fresh ids" $ do
@@ -140,8 +173,8 @@ genValue g = do
   t <- g
   makeValue t
 
-data Term =
-    Value Int Text
+data Term
+  = Value Int Text
   | Exp Int Term Term
   deriving (Eq, Show)
 
@@ -162,7 +195,7 @@ runFresh :: (Show a) => GenT (State Int) a -> PropertyT IO a
 runFresh = forAll . runStateGen
 
 runStateGen :: (Show a) => GenT (State Int) a -> Gen a
-runStateGen = hoist (pure . flip evalState 0  )
+runStateGen = hoist (pure . flip evalState 0)
 
 instance Fresh (GenT (State Int)) where
   fresh = do
@@ -173,20 +206,18 @@ instance Fresh (GenT (State Int)) where
 -- | Sample GenT IO values
 sampleGenIO :: GenT IO a -> IO a
 sampleGenIO gen =
-    let
-      loop n =
-        if n <= 0 then
-          panic "Hedgehog.Gen.sample: too many discards, could not generate a sample"
-        else do
-          seed <- Seed.random
-          NodeT r _  <- runTreeT $ evalGenT 30 seed gen
-          case r of
-            Nothing ->
-              loop (n - 1)
-            Just a ->
-              pure a
-    in
-      loop (100 :: Int)
+  let loop n =
+        if n <= 0
+          then panic "Hedgehog.Gen.sample: too many discards, could not generate a sample"
+          else do
+            seed <- Seed.random
+            NodeT r _ <- runTreeT $ evalGenT 30 seed gen
+            case r of
+              Nothing ->
+                loop (n - 1)
+              Just a ->
+                pure a
+   in loop (100 :: Int)
 
 {-# NOINLINE distinctInt #-}
 distinctInt :: GenIO Int

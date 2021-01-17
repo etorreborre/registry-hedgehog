@@ -1,14 +1,14 @@
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE QuasiQuotes     #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Registry.Hedgehog.TH where
 
-import           Control.Monad.Fail              (fail)
-import           Data.Registry.Internal.TH
-import           Language.Haskell.TH
-import           Language.Haskell.TH.Syntax
-import           Protolude
+import Control.Monad.Fail (fail)
+import Data.Registry.Internal.TH
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
+import Protolude
 
 -- | Make a registry containing generators for an ADT
 --   We  want to generate the following
@@ -19,7 +19,6 @@ import           Protolude
 --
 -- genEmployeeStatus :: GenIO Chooser -> GenIO (Tag "permanent" EmployeeStatus) -> GenIO (Tag "temporary" EmployeeStatus) -> GenIO EmployeeStatus
 -- genEmployeeStatus chooser g1 g2 = chooseOne chooser [fmap unTagg1, fmap unTag g2]
---
 makeGenerators :: Name -> ExpQ
 makeGenerators genType = do
   info <- reify genType
@@ -28,7 +27,6 @@ makeGenerators genType = do
       selector <- makeSelectGenerator name constructors
       generators <- traverse makeConstructorGenerator constructors
       assembleGeneratorsToRegistry selector generators
-
     other -> do
       qReport True ("can only create generators for an ADT, got: " <> show other)
       fail "generators creation failed"

@@ -15,11 +15,6 @@ matrix:
       compiler: ": #stack 8.2.2"
       addons: {apt: {packages: [ghc-8.2.2], sources: [hvr-ghc]}}
 
-    - env: GHCVER=8.2.1 CACHE_NAME=8.2.2-osx BUILD_BINARY=1
-      os: osx
-      compiler: ": #stack 8.2.2"
-      addons: {apt: {packages: [ghc-8.2.2], sources: [hvr-ghc]}}
-
     - env: GHCVER=8.4.4 CACHE_NAME=8.4.4 BUILD_BINARY=1
       compiler: ": #stack 8.4.4"
       addons: {apt: {packages: [ghc-8.4.4], sources: [hvr-ghc]}}
@@ -29,14 +24,18 @@ matrix:
       compiler: ": #stack 8.4.4"
       addons: {apt: {packages: [ghc-8.4.4], sources: [hvr-ghc]}}
 
-    - env: GHCVER=8.6.2 CACHE_NAME=8.6.2 BUILD_BINARY=1
-      compiler: ": #stack 8.6.2"
-      addons: {apt: {packages: [ghc-8.6.2], sources: [hvr-ghc]}}
-
     - env: GHCVER=8.4.4 CACHE_NAME=8.6.2-osx BUILD_BINARY=1
       os: osx
       compiler: ": #stack 8.6.2"
       addons: {apt: {packages: [ghc-8.6.2], sources: [hvr-ghc]}}
+
+    - env: GHCVER=8.6.2 CACHE_NAME=8.6.2 BUILD_BINARY=1
+      compiler: ": #stack 8.6.2"
+      addons: {apt: {packages: [ghc-8.6.2], sources: [hvr-ghc]}}
+
+    - env: GHCVER=8.8.4 CACHE_NAME=8.8.4 BUILD_BINARY=1
+      compiler: ": #stack 8.8.4"
+      addons: {apt: {packages: [ghc-8.8.4], sources: [hvr-ghc]}}
 
 install:
  - unset CC

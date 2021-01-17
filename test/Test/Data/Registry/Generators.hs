@@ -1,35 +1,35 @@
-{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Test.Data.Registry.Generators where
 
-import           Data.Registry
-import           Data.Registry.Hedgehog
-import           Data.Registry.Hedgehog.TH
-import           Data.Registry.TH
-import           Hedgehog.Gen               as Gen hiding (print)
-import           Hedgehog.Internal.Gen      hiding (print)
-import           Hedgehog.Range
-import           Protolude                  hiding (list)
-import           Test.Data.Registry.Company
-import           Test.Tasty.Hedgehogx
+import Data.Registry
+import Data.Registry.Hedgehog
+import Data.Registry.Hedgehog.TH
+import Data.Registry.TH
+import Hedgehog.Gen as Gen hiding (print)
+import Hedgehog.Internal.Gen hiding (print)
+import Hedgehog.Range
+import Protolude hiding (list)
+import Test.Data.Registry.Company
+import Test.Tasty.Hedgehogx
 
 registry =
-    genFun Company
- <: genFun Department
- <: genFun Employee
- -- we can generate data for different constructors in an ADT with some Template Haskell
- <: $(makeGenerators ''EmployeeStatus)
- -- we can generate Lists or Maybe of elements
- <: fun (listOf @Department)
- <: fun (listOf @Employee)
- <: fun (maybeOf @Int)
- <: genVal genInt
- <: genVal genText
+  genFun Company
+    <: genFun Department
+    <: genFun Employee
+    -- we can generate data for different constructors in an ADT with some Template Haskell
+    <: $(makeGenerators ''EmployeeStatus)
+    -- we can generate Lists or Maybe of elements
+    <: fun (listOf @Department)
+    <: fun (listOf @Employee)
+    <: fun (maybeOf @Int)
+    <: genVal genInt
+    <: genVal genText
 
 genInt :: Gen Int
 genInt = integral (linear 1 3)
@@ -46,5 +46,5 @@ generators :: Registry _ _
 generators = $(checkRegistry 'registry)
 
 -- | We create a forall function using all the generators
-forall :: forall a . _ => PropertyT IO a
+forall :: forall a. _ => PropertyT IO a
 forall = withFrozenCallStack $ forAllT (genWith @a generators)

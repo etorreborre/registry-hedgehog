@@ -1,5 +1,5 @@
-import           AutoDiscoveredSpecs   (tests)
-import           Protolude
-import           Test.Tasty.Hedgehogx
+import AutoDiscoveredSpecs (tests)
+import Protolude
+import Test.Tasty.Hedgehogx
 
 main = tests >>= defaultMain . groupByModuleName

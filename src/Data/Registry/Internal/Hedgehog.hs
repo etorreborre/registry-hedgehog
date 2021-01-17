@@ -1,35 +1,33 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 
-module Data.Registry.Internal.Hedgehog (
-  GenIO
-, Chooser (..)
+module Data.Registry.Internal.Hedgehog
+  ( GenIO,
+    Chooser (..),
+    -- cycling values
+    cycleWith,
+    chooseOne,
+    choiceChooser,
+    cycleChooser,
+    -- making distinct values
+    distinct,
+    distinctWith,
+    -- utilities
+    liftGen,
+    sampleIO,
+  )
+where
 
--- cycling values
-, cycleWith
-, chooseOne
-, choiceChooser
-, cycleChooser
-
--- making distinct values
-, distinct
-, distinctWith
-
--- utilities
-, liftGen
-, sampleIO
-) where
-
-import           Control.Monad.Morph
-import           Data.IORef
-import           Data.Maybe             as Maybe
-import           Hedgehog
-import           Hedgehog.Gen           as Gen
-import           Hedgehog.Internal.Gen  as Gen
-import           Hedgehog.Internal.Seed as Seed (random)
-import           Hedgehog.Internal.Tree as Tree (NodeT (..), runTreeT)
-import           Prelude                (show, (!!))
-import           Protolude              as P
+import Control.Monad.Morph
+import Data.IORef
+import Data.Maybe as Maybe
+import Hedgehog
+import Hedgehog.Gen as Gen
+import Hedgehog.Internal.Gen as Gen
+import Hedgehog.Internal.Seed as Seed (random)
+import Hedgehog.Internal.Tree as Tree (NodeT (..), runTreeT)
+import Protolude as P
+import Prelude (show, (!!))
 
 -- | All the generators we use are lifted into GenIO to allow some generators to be stateful
 type GenIO = GenT IO
@@ -49,21 +47,21 @@ chooseOne chooser gs = do
 
 -- | Chooser for randomly selecting a generator
 choiceChooser :: Chooser
-choiceChooser = Chooser { chooserType = "choice", pickOne = pure . Gen.choice }
+choiceChooser = Chooser {chooserType = "choice", pickOne = pure . Gen.choice}
 
 -- | Chooser for deterministically choosing elements in a list
 --   by cycling over them, which requires to maintain some state about the last position
 cycleChooser :: IO Chooser
 cycleChooser = do
   ref <- newIORef 0
-  pure $ Chooser { chooserType = "cycle", pickOne = cycleWith ref }
+  pure $ Chooser {chooserType = "cycle", pickOne = cycleWith ref}
 
 -- | A "chooser" strategy
 --   The type can be used to debug specializations
-data Chooser = Chooser {
-  chooserType :: Text
-, pickOne     :: forall a . [GenIO a] -> IO (GenIO a)
-}
+data Chooser = Chooser
+  { chooserType :: Text,
+    pickOne :: forall a. [GenIO a] -> IO (GenIO a)
+  }
 
 instance Show Chooser where
   show c = toS (chooserType c)
@@ -74,8 +72,8 @@ cycleWith ref gs = do
   n <- readIORef ref
   modifyIORef ref increment
   pure (gs !! n)
-
-  where increment i = if i == P.length gs - 1 then 0 else i + 1
+  where
+    increment i = if i == P.length gs - 1 then 0 else i + 1
 
 -- * MAKING DISTINCT VALUES
 
@@ -91,7 +89,7 @@ distinctWith :: (MonadIO m, Eq a) => IORef [a] -> GenT m a -> GenT m a
 distinctWith ref g = GenT $ \size seed -> do
   as <- liftIO $ readIORef ref
   a <- runGenT size seed $ (Gen.filterT (not . flip elem as)) g
-  liftIO $ writeIORef ref (a:as)
+  liftIO $ writeIORef ref (a : as)
   pure a
 
 -- * UTILITIES
@@ -99,17 +97,15 @@ distinctWith ref g = GenT $ \size seed -> do
 -- | Sample GenIO values
 sampleIO :: GenIO a -> IO a
 sampleIO gen =
-    let
-      loop n =
-        if n <= 0 then
-          panic "Hedgehog.Gen.sample: too many discards, could not generate a sample"
-        else do
-          seed <- Seed.random
-          NodeT r _  <- runTreeT $ evalGenT 30 seed gen
-          case r of
-            Nothing ->
-              loop (n - 1)
-            Just a ->
-              pure a
-    in
-      loop (100 :: Int)
+  let loop n =
+        if n <= 0
+          then panic "Hedgehog.Gen.sample: too many discards, could not generate a sample"
+          else do
+            seed <- Seed.random
+            NodeT r _ <- runTreeT $ evalGenT 30 seed gen
+            case r of
+              Nothing ->
+                loop (n - 1)
+              Just a ->
+                pure a
+   in loop (100 :: Int)
