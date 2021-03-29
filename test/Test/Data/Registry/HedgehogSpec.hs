@@ -83,7 +83,7 @@ test_a_property_with_a_seed = withSeed "(Size 51) (Seed 35539461314630919 502910
     n <- forAll (integral (linear 1 3))
     (n >= 1) === True
 
--- * USING GENERATORS
+-- * USING registry
 
 test_company_1 =
   prop "a company can be used for testing" $ do
@@ -99,6 +99,7 @@ setOneEmployee = addFunS $ listOfMinMax @Employee 1 1
 setSmallCompany = setOneEmployee >> setOneDepartment
 
 test_small_company =
+<<<<<<< HEAD
   prop "a small company has just one department and one employee" $
     runS generators $ do
       setSmallCompany
@@ -109,6 +110,16 @@ test_small_company =
 
 -- * We can also specialize some generators in a given context
 
+=======
+  prop "a small company has just one department and one employee" $ runS registry $ do
+    setSmallCompany
+    company <- forallS @Company
+    length (departments company) === 1
+    let Just d = head $ departments company
+    length (employees d) === 1
+
+-- * We can also specialize some registry in a given context
+>>>>>>> fix: fixed the implementation of makeGenerators
 --   For example we might want to generate shorter department names even
 --   if Department is using Text values. To do this we specialize the Text
 --   generator in the context of a Gen Department
@@ -118,11 +129,18 @@ genDepartmentName = T.take 5 . T.toUpper <$> genText
 setDepartmentName = specializeGenS @Department genDepartmentName
 
 test_with_better_department_name = noShrink $
+<<<<<<< HEAD
   prop "a department must have a short capitalized name" $
     runS generators $ do
       setSmallCompany
       setDepartmentName
       company <- forallS @Company
+=======
+  prop "a department must have a short capitalized name" $ runS registry $ do
+    setSmallCompany
+    setDepartmentName
+    company <- forallS @Company
+>>>>>>> fix: fixed the implementation of makeGenerators
 
       -- uncomment to print the department names and inspect them
       -- print company
@@ -134,6 +152,7 @@ test_with_better_department_name = noShrink $
 --   across different constructors for a given data type
 
 test_cycle_constructors =
+<<<<<<< HEAD
   prop "we can cycle deterministically across all the constructors of a data type" $
     runS generators $ do
       setCycleChooserS @EmployeeStatus
@@ -149,6 +168,22 @@ test_distinct_values =
       -- uncomment to check
       -- collect =<< departmentName <$> forallS @Department
       success
+=======
+  prop "we can cycle deterministically across all the constructors of a data type" $ runS registry $ do
+    setCycleChooserS @EmployeeStatus
+    -- uncomment to check
+    -- collect =<< forallS @EmployeeStatus
+    success
+
+-- We can also make sure we generate distinct values for a given type
+test_distinct_values =
+  prop "we can generate distinct values for a given data type when used in a specific context" $ runS registry $ do
+   setDistinctForS @Department @Text
+   -- uncomment to check
+   -- collect =<< departmentName <$> forallS @Department
+   success
+
+>>>>>>> fix: fixed the implementation of makeGenerators
 
 test_ints_generator =
   prop "we can generate ints" $ do

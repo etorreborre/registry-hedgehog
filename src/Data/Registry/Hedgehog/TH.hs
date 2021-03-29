@@ -1,10 +1,9 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Data.Registry.Hedgehog.TH where
 
 import Control.Monad.Fail (fail)
+import Data.Registry
 import Data.Registry.Internal.TH
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
@@ -19,7 +18,6 @@ import Protolude
 --
 -- genEmployeeStatus :: GenIO Chooser -> GenIO (Tag "permanent" EmployeeStatus) -> GenIO (Tag "temporary" EmployeeStatus) -> GenIO EmployeeStatus
 -- genEmployeeStatus chooser g1 g2 = chooseOne chooser [fmap unTag1, fmap unTag g2]
---
 makeGenerators :: Name -> ExpQ
 makeGenerators genType = do
   info <- reify genType
@@ -31,3 +29,6 @@ makeGenerators genType = do
     other -> do
       qReport True ("can only create generators for an ADT, got: " <> show other)
       fail "generators creation failed"
+
+emptyRegistry :: Registry '[] '[]
+emptyRegistry = mempty
