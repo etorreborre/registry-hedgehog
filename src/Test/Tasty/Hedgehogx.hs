@@ -14,18 +14,23 @@ module Test.Tasty.Hedgehogx
   ( module Hedgehog,
     module Tasty,
     module Test.Tasty.HedgehogTest,
+
     -- * Tests definition
     prop,
     test,
+
     -- * Tests settings
     minTestsOk,
     noShrink,
     withSeed,
+
     -- * Running tests
     run,
     runOnly,
+
     -- * Assertions
     gotException,
+
     -- * Display
     printDifference,
     display,

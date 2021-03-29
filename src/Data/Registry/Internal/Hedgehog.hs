@@ -1,8 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-<<<<<<< HEAD
-=======
 {-# LANGUAGE DataKinds #-}
->>>>>>> fix: fixed the implementation of makeGenerators
 {-# LANGUAGE PartialTypeSignatures #-}
 
 module Data.Registry.Internal.Hedgehog
