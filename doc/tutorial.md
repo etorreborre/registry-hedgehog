@@ -119,7 +119,8 @@ To create a registry for generators
      - `genVal` to add a generator (like `genInt :: Gen Int` to generate integers)
      -  `<:` to append elements to the registry
 
-2. try to make a `GenIO Company` with `make @(GenIO Company) registry`. This should not compile because we don't have a generator for lists of `Departments`
+2. try to make a `GenIO Company` with `make @(GenIO Company) registry`. This should not compile because
+   there are missing generators. You can still create an "unchecked" registry with `+:` instead of `<:`
 
 _Notes_:
 
@@ -135,7 +136,7 @@ We are missing generators for "relationships" like `[Employee]` or `Maybe Int`.
 1. add them using the `listOf @a` and `maybeOf @a` functions
 2. great, we can now write our first Hedgehog property!
 ```
-import           Test.Tasty.Hedgehogx
+import Test.Tasty.Hedgehogx
 
 forall :: forall a . (Typeable a, Show a) => PropertyT IO a
 forall = forAllT $ genWith @a registry
@@ -177,7 +178,7 @@ test_employee_status = prop "make an employee status" $ do
 _Notes_:
 
  - there are other useful functions in Hedgehog to check the coverage: `classify` and `cover`
- - the `makeGenerators` function provides additional functionality with the ability to "cycle" across constructors instead of randomly selecting one (see Exercise 14)
+ - the `makeGenerators` TemplateHaskell function provides additional functionality with the ability to "cycle" across constructors instead of randomly selecting one (see Exercise 14)
 
 ### Exercise 4
 
