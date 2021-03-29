@@ -16,15 +16,15 @@ import Test.Tutorial.DataModel
 
 registry :: Registry _ _
 registry =
-  genFun Company
-    <: genFun Department
-    <: genFun Employee
-    <: fun (listOf @Employee)
-    <: fun (listOf @Department)
-    <: fun (maybeOf @Int)
-    <: genVal genEmployeeStatus
-    <: genVal genInt
-    <: genVal genText
+     genFun Company
+  <: fun    (listOf @Department)
+  <: genFun Department
+  <: fun    (listOf @Employee)
+  <: genFun Employee
+  <: genVal genEmployeeStatus
+  <: fun    (maybeOf @Int)
+  <: genVal genInt
+  <: genVal genText
 
 genInt :: Gen Int
 genInt = integral (linear 1 3)

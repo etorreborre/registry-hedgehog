@@ -1,73 +1,76 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Registry.Hedgehog
-  ( -- creation / tweaking functions
-    GenIO,
-    Chooser (..),
-    forallS,
-    forAllT, -- re-export of forAllT for convenience purpose since we are working in GenIO
-    filterGenS,
-    genFun,
-    genVal,
-    genWith,
-    modifyGenS,
-    setGen,
-    setGenIO,
-    setGenS,
-    specializeGen,
-    specializeGenIO,
-    specializeGenS,
-    tweakGen,
-    tweakGenS,
-    makeNonEmpty,
-    makeNonEmptyS,
-    -- combinators to compose different types of generators
-    eitherOf,
-    hashMapOf,
-    listOf,
-    listOfMinMax,
-    mapOf,
-    maybeOf,
-    nonEmptyMapOf,
-    nonEmptyOf,
-    pairOf,
-    setOf,
-    tripleOf,
-    -- cycling values
-    choiceChooser,
-    chooseOne,
-    setCycleChooser,
-    setCycleChooserS,
-    -- making distinct values
-    distinct,
-    setDistinct,
-    setDistinctFor,
-    setDistinctForS,
-    setDistinctS,
-    -- sampling for GenIO generators
-    sampleIO,
-  )
-where
+module Data.Registry.Hedgehog (
+  -- creation / tweaking functions
+  GenIO
+, Chooser (..)
+, forallS
+, forAllT -- re-export of forAllT for convenience purpose since we are working in GenIO
+, filterGenS
+, genFun
+, genVal
+, genWith
+, modifyGenS
+, setGen
+, setGenIO
+, setGenS
+, specializeGen
+, specializeGenIO
+, specializeGenS
+, tweakGen
+, tweakGenS
+, makeNonEmpty
+, makeNonEmptyS
 
-import Control.Monad.Morph
-import Data.HashMap.Strict as HashMap (HashMap, fromList)
-import Data.IORef
-import Data.List.NonEmpty hiding (cycle, nonEmpty, (!!))
-import Data.Map as Map (fromList)
-import Data.Maybe as Maybe
-import Data.Registry
-import Data.Registry.Internal.Hedgehog
-import Data.Registry.Internal.Types
-import Data.Set as Set (fromList)
-import Hedgehog
-import Hedgehog.Gen as Gen
-import Hedgehog.Internal.Property (forAllT)
-import Hedgehog.Range
-import Protolude as P
-import System.IO.Unsafe
+-- combinators to compose different types of generators
+, eitherOf
+, hashMapOf
+, listOf
+, listOfMinMax
+, mapOf
+, maybeOf
+, nonEmptyMapOf
+, nonEmptyOf
+, pairOf
+, setOf
+, tripleOf
+
+-- cycling values
+, choiceChooser
+, chooseOne
+, setCycleChooser
+, setCycleChooserS
+
+-- making distinct values
+, distinct
+, setDistinct
+, setDistinctFor
+, setDistinctForS
+, setDistinctS
+
+-- sampling for GenIO generators
+, sampleIO
+) where
+
+import           Control.Monad.Morph
+import           Data.HashMap.Strict             as HashMap (HashMap, fromList)
+import           Data.IORef
+import           Data.List.NonEmpty              hiding (cycle, nonEmpty, (!!))
+import           Data.Map                        as Map (fromList)
+import           Data.Maybe                      as Maybe
+import           Data.Registry
+import           Data.Registry.Internal.Hedgehog
+import           Data.Registry.Internal.Types
+import           Data.Set                        as Set (fromList)
+import           Hedgehog
+import           Hedgehog.Gen                    as Gen
+import           Hedgehog.Internal.Property      (forAllT)
+import           Hedgehog.Range
+import           Protolude                       as P
+import           System.IO.Unsafe
 
 -- * CREATION / TWEAKING OF REGISTRY GENERATORS
 
@@ -81,12 +84,12 @@ genVal g = fun (liftGen g)
 
 -- | Extract a generator from a registry
 --   We use makeUnsafe assuming that the registry has been checked before
-genWith :: forall a ins out. (Typeable a) => Registry ins out -> GenIO a
-genWith = makeUnsafe @(GenIO a)
+genWith :: forall a ins out . (Typeable a) => Registry ins out -> GenIO a
+genWith = make @(GenIO a)
 
 -- | Modify the value of a generator in a given registry
-tweakGen :: forall a ins out. (Typeable a) => (a -> a) -> Registry ins out -> Registry ins out
-tweakGen f = tweakUnsafe @(GenIO a) (\genA -> f <$> genA)
+tweakGen :: forall a ins out . (Typeable a) => (a -> a) -> Registry ins out -> Registry ins out
+tweakGen f = tweak @(GenIO a) (f <$>)
 
 -- | Modify the registry for a given generator in a State monad
 tweakGenS :: forall a m ins out. (Typeable a, MonadState (Registry ins out) m) => (a -> a) -> m ()
@@ -96,8 +99,8 @@ tweakGenS f = modify (tweakGen f)
 setGen :: forall a ins out. (Typeable a) => Gen a -> Registry ins out -> Registry ins out
 setGen = setGenIO . liftGen
 
-setGenIO :: forall a ins out. (Typeable a) => GenIO a -> Registry ins out -> Registry ins out
-setGenIO genA = tweakUnsafe @(GenIO a) (const genA)
+setGenIO :: forall a ins out . (Typeable a) => GenIO a -> Registry ins out -> Registry ins out
+setGenIO genA = tweak @(GenIO a) (const genA)
 
 -- | Set a specific generator on the registry the value of a generator in a given registry in a State monad
 setGenS :: forall a m ins out. (Typeable a, MonadState (Registry ins out) m) => Gen a -> m ()
@@ -116,8 +119,8 @@ specializeGenS :: forall a b m ins out. (Typeable a, Typeable b, Contains (GenIO
 specializeGenS g = modify (specializeGen @a @b g)
 
 -- | Modify a generator
-modifyGenS :: forall a ins out. (Typeable a) => (GenIO a -> GenIO a) -> PropertyT (StateT (Registry ins out) IO) ()
-modifyGenS f = modify (tweakUnsafe @(GenIO a) f)
+modifyGenS :: forall a ins out . (Typeable a) => (GenIO a -> GenIO a) -> PropertyT (StateT (Registry ins out) IO) ()
+modifyGenS f = modify (tweak @(GenIO a) f)
 
 -- | Filter a generator
 filterGenS :: forall a ins out. (Typeable a) => (a -> Bool) -> PropertyT (StateT (Registry ins out) IO) ()
@@ -135,8 +138,8 @@ makeNonEmpty :: forall a ins out. (Typeable a) => Registry ins out -> Registry i
 makeNonEmpty r =
   -- extract a generator for one element only
   let genA = genWith @a r
-   in -- add that element in front of a list of generated elements
-      tweakUnsafe @(GenIO [a]) (\genAs -> (:) <$> genA <*> genAs) r
+  -- add that element in front of a list of generated elements
+  in  tweak @(GenIO [a]) (\genAs -> (:) <$> genA <*> genAs) r
 
 -- | Make sure there is always one element of a given type in a list of elements in a State monad
 makeNonEmptyS :: forall a m ins out. (Typeable a, MonadState (Registry ins out) m) => m ()
@@ -219,8 +222,8 @@ setCycleChooserS =
 setDistinct :: forall a ins out. (Eq a, Typeable a, Contains (GenIO a) out) => Registry ins out -> Registry ins out
 setDistinct = setDistinctWithRef @a (unsafePerformIO $ newIORef [])
 
-setDistinctWithRef :: forall a ins out. (Eq a, Typeable a, Contains (GenIO a) out) => IORef [a] -> Registry ins out -> Registry ins out
-setDistinctWithRef ref r = setGenIO (distinctWith ref (makeFast @(GenIO a) r)) r
+setDistinctWithRef :: forall a ins out . (Eq a, Typeable a, Contains (GenIO a) out) => IORef [a] -> Registry ins out -> Registry ins out
+setDistinctWithRef ref r = setGenIO (distinctWith ref (make @(GenIO a) r)) r
 
 -- | Generate distinct values for a specific data type
 {-# NOINLINE setDistinctS #-}
@@ -234,8 +237,8 @@ setDistinctS =
 setDistinctFor :: forall a b ins out. (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out) => Registry ins out -> Registry ins out
 setDistinctFor = setDistinctForWithRef @a @b (unsafePerformIO $ newIORef [])
 
-setDistinctForWithRef :: forall a b ins out. (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out) => IORef [b] -> Registry ins out -> Registry ins out
-setDistinctForWithRef ref r = specializeGenIO @a (distinctWith ref (makeFast @(GenIO b) r)) r
+setDistinctForWithRef :: forall a b ins out . (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out) => IORef [b] -> Registry ins out -> Registry ins out
+setDistinctForWithRef ref r = specializeGenIO @a (distinctWith ref (make @(GenIO b) r)) r
 
 -- | Generate distinct values for a specific data type, when used inside another data type
 {-# NOINLINE setDistinctForS #-}

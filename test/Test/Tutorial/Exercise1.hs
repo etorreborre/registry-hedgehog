@@ -15,12 +15,13 @@ import Test.Tutorial.DataModel
 
 registry :: Registry _ _
 registry =
-  genFun Company
-    <: genFun Department
-    <: genFun Employee
-    <: genVal genEmployeeStatus
-    <: genVal genInt
-    <: genVal genText
+     genFun Company
+  +: genFun Department
+  +: genFun Employee
+  +: genVal genEmployeeStatus
+  +: genVal genInt
+  +: genVal genText
+  +: mempty
 
 genInt :: Gen Int
 genInt = integral (linear 1 3)

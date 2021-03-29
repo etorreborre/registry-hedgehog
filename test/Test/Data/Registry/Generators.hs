@@ -19,17 +19,17 @@ import Test.Data.Registry.Company
 import Test.Tasty.Hedgehogx
 
 registry =
-  genFun Company
-    <: genFun Department
-    <: genFun Employee
-    -- we can generate data for different constructors in an ADT with some Template Haskell
-    <: $(makeGenerators ''EmployeeStatus)
-    -- we can generate Lists or Maybe of elements
-    <: fun (listOf @Department)
-    <: fun (listOf @Employee)
-    <: fun (maybeOf @Int)
-    <: genVal genInt
-    <: genVal genText
+    genFun Company
+ <: fun (listOf @Department)
+ <: genFun Department
+ <: fun (listOf @Employee)
+ <: genFun Employee
+ -- we can generate data for different constructors in an ADT with some Template Haskell
+ <: $(makeGenerators ''EmployeeStatus)
+ <: fun (maybeOf @Int)
+ -- we can generate Lists or Maybe of elements
+ <: genVal genInt
+ <: genVal genText
 
 genInt :: Gen Int
 genInt = integral (linear 1 3)
@@ -41,10 +41,6 @@ genText = text (linear 1 10) alpha
 -- See the gory details of why this is necessary: https://gitlab.haskell.org/ghc/ghc/issues/9813
 $(return [])
 
--- | Check that the registry is complete. This speeds up compilation when there are lots of generators
-generators :: Registry _ _
-generators = $(checkRegistry 'registry)
-
 -- | We create a forall function using all the generators
-forall :: forall a. _ => PropertyT IO a
-forall = withFrozenCallStack $ forAllT (genWith @a generators)
+forall :: forall a . _ => PropertyT IO a
+forall = withFrozenCallStack $ forAllT (genWith @a registry)

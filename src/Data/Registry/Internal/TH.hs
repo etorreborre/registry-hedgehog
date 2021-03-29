@@ -6,7 +6,7 @@ module Data.Registry.Internal.TH where
 
 import Control.Monad.Fail (fail)
 import Data.Registry.Internal.Hedgehog
-import Data.Text (splitOn, toLower)
+import Data.Text (splitOn)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import Protolude hiding (Type)
@@ -54,7 +54,7 @@ tagName constructor = do
 constructorParameterName :: Con -> Q Name
 constructorParameterName constructor = do
   name <- constructorName constructor
-  pure $ mkName (toS $ toLower name)
+  pure $ mkName (toLower <$> toS name)
 
 -- | Extract the last name of a constructor
 constructorName :: Con -> Q Text
