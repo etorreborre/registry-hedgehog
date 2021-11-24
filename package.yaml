@@ -1,5 +1,5 @@
 name: registry-hedgehog
-version: 0.4.0.0
+version: 0.4.1.0
 synopsis: utilities to work with Hedgehog generators and `registry`
 
 description: This library provides some functions to extract generators from a "Registry" and
@@ -82,18 +82,7 @@ tests:
     source-dirs:
       - test
     dependencies:
-      - mmorph
-      - registry
       - registry-hedgehog
-      - hedgehog             >= 1.0 && < 2
-      - generic-lens
-      - tasty
-      - tasty-discover
-      - tasty-hedgehog       >= 1.0   && < 2.0
-      - tasty-th
-      - transformers
-      - text
-      - universum
 
     ghc-options:
       -threaded

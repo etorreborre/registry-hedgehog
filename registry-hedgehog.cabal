@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 036db94cca530b2d314b5b42f37b5843436c26f4be294c28f33f663be555e541
+-- hash: c5a3413b29d2e5af445725863ab1c5a4bdcb5654a60020e7c5f04d424e3ebb72
 
 name:           registry-hedgehog
-version:        0.4.0.0
+version:        0.4.1.0
 synopsis:       utilities to work with Hedgehog generators and `registry`
 description:    This library provides some functions to extract generators from a "Registry" and make stateful modifications of that Registry to precisely control the generation of data
 category:       Control
@@ -32,24 +32,51 @@ library
       Paths_registry_hedgehog
   hs-source-dirs:
       src
-  default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
+  default-extensions:
+      BangPatterns
+      DefaultSignatures
+      EmptyCase
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
+      PatternSynonyms
+      Rank2Types
+      RankNTypes
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -fno-warn-partial-type-signatures -optP-Wno-nonportable-include-path -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
     , containers >=0.2 && <1
     , hedgehog >=1.0 && <2
-    , mmorph >=1 && <2
-    , multimap >=1 && <2
-    , protolude >=0.3 && <0.4
-    , registry >=0.2 && <0.3
-    , tasty >=1 && <2
+    , mmorph ==1.*
+    , multimap ==1.*
+    , protolude ==0.3.*
+    , registry ==0.2.*
+    , tasty ==1.*
     , tasty-discover >=2 && <5
     , tasty-hedgehog >=1.0 && <2.0
     , tasty-th >=0.1 && <1
     , template-haskell >=2.13 && <3.0
-    , text >=1 && <2
+    , text ==1.*
     , transformers >=0.5 && <2
-    , universum >=1 && <2
+    , universum ==1.*
     , unordered-containers >=0.1 && <1
   default-language: Haskell2010
 
@@ -71,25 +98,51 @@ test-suite spec
       Paths_registry_hedgehog
   hs-source-dirs:
       test
-  default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
+  default-extensions:
+      BangPatterns
+      DefaultSignatures
+      EmptyCase
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      NoImplicitPrelude
+      OverloadedStrings
+      PatternSynonyms
+      Rank2Types
+      RankNTypes
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -fno-warn-partial-type-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-incomplete-uni-patterns -fno-warn-type-defaults -optP-Wno-nonportable-include-path
   build-depends:
       base >=4.7 && <5
     , containers >=0.2 && <1
-    , generic-lens
     , hedgehog >=1.0 && <2
-    , mmorph
-    , multimap >=1 && <2
-    , protolude >=0.3 && <0.4
-    , registry
+    , mmorph ==1.*
+    , multimap ==1.*
+    , protolude ==0.3.*
+    , registry ==0.2.*
     , registry-hedgehog
-    , tasty
-    , tasty-discover
+    , tasty ==1.*
+    , tasty-discover >=2 && <5
     , tasty-hedgehog >=1.0 && <2.0
-    , tasty-th
+    , tasty-th >=0.1 && <1
     , template-haskell >=2.13 && <3.0
-    , text
-    , transformers
-    , universum
+    , text ==1.*
+    , transformers >=0.5 && <2
+    , universum ==1.*
     , unordered-containers >=0.1 && <1
   default-language: Haskell2010
