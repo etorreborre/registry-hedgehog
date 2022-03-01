@@ -36,6 +36,8 @@ module Data.Registry.Hedgehog
     pairOf,
     setOf,
     tripleOf,
+    tuple4Of,
+    tuple5Of,
     -- cycling values
     choiceChooser,
     chooseOne,
@@ -104,15 +106,15 @@ setGenS :: forall a m ins out. (Typeable a, MonadState (Registry ins out) m) => 
 setGenS genA = modify (setGen genA)
 
 -- | Specialize a generator in a given context
-specializeGen :: forall a b ins out. (Typeable a, Typeable b, Contains (GenIO a) out) => Gen b -> Registry ins out -> Registry ins out
+specializeGen :: forall a b ins out. (Typeable a, Typeable b) => Gen b -> Registry ins out -> Registry ins out
 specializeGen g = specializeGenIO @a (liftGen g)
 
 -- | Specialize a generator in a given context
-specializeGenIO :: forall a b ins out. (Typeable a, Typeable b, Contains (GenIO a) out) => GenIO b -> Registry ins out -> Registry ins out
+specializeGenIO :: forall a b ins out. (Typeable a, Typeable b) => GenIO b -> Registry ins out -> Registry ins out
 specializeGenIO = specialize @(GenIO a)
 
 -- | Specialize a generator in a given context
-specializeGenS :: forall a b m ins out. (Typeable a, Typeable b, Contains (GenIO a) out, MonadState (Registry ins out) m) => Gen b -> m ()
+specializeGenS :: forall a b m ins out. (Typeable a, Typeable b, MonadState (Registry ins out) m) => Gen b -> m ()
 specializeGenS g = modify (specializeGen @a @b g)
 
 -- | Modify a generator
@@ -151,6 +153,14 @@ pairOf ga gb = (,) <$> ga <*> gb
 -- | Create a generator for a triple
 tripleOf :: forall a b c. GenIO a -> GenIO b -> GenIO c -> GenIO (a, b, c)
 tripleOf ga gb gc = (,,) <$> ga <*> gb <*> gc
+
+-- | Create a generator for a quadruple
+tuple4Of :: forall a b c d. GenIO a -> GenIO b -> GenIO c -> GenIO d -> GenIO (a, b, c, d)
+tuple4Of ga gb gc gd = (,,,) <$> ga <*> gb <*> gc <*> gd
+
+-- | Create a generator for a quintuple
+tuple5Of :: forall a b c d e. GenIO a -> GenIO b -> GenIO c -> GenIO d -> GenIO e -> GenIO (a, b, c, d, e)
+tuple5Of ga gb gc gd ge = (,,,,) <$> ga <*> gb <*> gc <*> gd <*> ge
 
 -- | Create a default generator for a small list of elements
 listOf :: forall a. GenIO a -> GenIO [a]
@@ -197,14 +207,14 @@ nonEmptyMapOf gk gv = do
 
 -- | Set a cycling chooser for a specific data type
 {-# NOINLINE setCycleChooser #-}
-setCycleChooser :: forall a ins out. (Typeable a, Contains (GenIO a) out) => Registry ins out -> Registry ins out
+setCycleChooser :: forall a ins out. (Typeable a) => Registry ins out -> Registry ins out
 setCycleChooser r = unsafePerformIO $ do
   c <- cycleChooser
   pure $ specializeValTo @GenIO @(GenIO a) c r
 
 -- | Set a cycling chooser for a specific data type
 {-# NOINLINE setCycleChooserS #-}
-setCycleChooserS :: forall a m ins out. (Typeable a, Contains (GenIO a) out, MonadState (Registry ins out) m, MonadIO m) => m ()
+setCycleChooserS :: forall a m ins out. (Typeable a, MonadState (Registry ins out) m, MonadIO m) => m ()
 setCycleChooserS =
   let c = unsafePerformIO cycleChooser
    in do
@@ -216,30 +226,30 @@ setCycleChooserS =
 
 -- | Generate distinct values for a specific data type
 {-# NOINLINE setDistinct #-}
-setDistinct :: forall a ins out. (Eq a, Typeable a, Contains (GenIO a) out) => Registry ins out -> Registry ins out
+setDistinct :: forall a ins out. (Eq a, Typeable a) => Registry ins out -> Registry ins out
 setDistinct = setDistinctWithRef @a (unsafePerformIO $ newIORef [])
 
-setDistinctWithRef :: forall a ins out. (Eq a, Typeable a, Contains (GenIO a) out) => IORef [a] -> Registry ins out -> Registry ins out
+setDistinctWithRef :: forall a ins out. (Eq a, Typeable a) => IORef [a] -> Registry ins out -> Registry ins out
 setDistinctWithRef ref r = setGenIO (distinctWith ref (make @(GenIO a) r)) r
 
 -- | Generate distinct values for a specific data type
 {-# NOINLINE setDistinctS #-}
-setDistinctS :: forall a m ins out. (Eq a, Typeable a, Contains (GenIO a) out, MonadState (Registry ins out) m, MonadIO m) => m ()
+setDistinctS :: forall a m ins out. (Eq a, Typeable a, MonadState (Registry ins out) m, MonadIO m) => m ()
 setDistinctS =
   let ref = unsafePerformIO $ newIORef []
    in modify (setDistinctWithRef @a ref)
 
 -- | Generate distinct values for a specific data type, when used inside another data type
 {-# NOINLINE setDistinctFor #-}
-setDistinctFor :: forall a b ins out. (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out) => Registry ins out -> Registry ins out
+setDistinctFor :: forall a b ins out. (Typeable a, Eq b, Typeable b) => Registry ins out -> Registry ins out
 setDistinctFor = setDistinctForWithRef @a @b (unsafePerformIO $ newIORef [])
 
-setDistinctForWithRef :: forall a b ins out. (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out) => IORef [b] -> Registry ins out -> Registry ins out
+setDistinctForWithRef :: forall a b ins out. (Typeable a, Eq b, Typeable b) => IORef [b] -> Registry ins out -> Registry ins out
 setDistinctForWithRef ref r = specializeGenIO @a (distinctWith ref (make @(GenIO b) r)) r
 
 -- | Generate distinct values for a specific data type, when used inside another data type
 {-# NOINLINE setDistinctForS #-}
-setDistinctForS :: forall a b m ins out. (Typeable a, Contains (GenIO a) out, Eq b, Typeable b, Contains (GenIO b) out, MonadState (Registry ins out) m, MonadIO m) => m ()
+setDistinctForS :: forall a b m ins out. (Typeable a, Eq b, Typeable b, MonadState (Registry ins out) m, MonadIO m) => m ()
 setDistinctForS =
   let ref = unsafePerformIO $ newIORef []
    in modify (setDistinctForWithRef @a @b ref)
