@@ -7,17 +7,18 @@ module Data.Registry.Internal.TH where
 import Control.Monad.Fail (fail)
 import Data.Registry.Internal.Hedgehog
 import Data.Text (splitOn)
+import Hedgehog
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import Protolude hiding (Type)
 import Prelude (last)
 
 -- | Create a generator for selecting between constructors of an ADT
---   One parameter is a GenIO Chooser in order to be able to later on
+--   One parameter is a Gen Chooser in order to be able to later on
 --   switch the selection strategy
 makeSelectGenerator :: Name -> [Con] -> ExpQ
 makeSelectGenerator name constructors = do
-  chooserParam <- [p|(chooser :: GenIO Chooser)|]
+  chooserParam <- [p|(chooser :: Gen Chooser)|]
   otherParams <- traverse (parameterFor name) constructors
   untaggedGenerators <- traverse untagGenerator constructors
   expression <- appE (appE (varE (mkName "chooseOne")) (varE (mkName "chooser"))) (pure $ ListE untaggedGenerators)
@@ -27,7 +28,7 @@ makeSelectGenerator name constructors = do
     parameterFor typeName constructor = do
       constructorParam <- constructorParameterName constructor
       constructorTag <- tagName constructor
-      sigP (varP constructorParam) (appT (conT (mkName "GenIO")) (appT (appT (conT (mkName "Tag")) (litT (strTyLit (show constructorTag)))) (conT typeName)))
+      sigP (varP constructorParam) (appT (conT (mkName "Gen")) (appT (appT (conT (mkName "Tag")) (litT (strTyLit (show constructorTag)))) (conT typeName)))
 
 -- Create a generator expression for a specific constructor of a data type
 -- runQ [|tag @"permanent" Permanent|]
@@ -38,7 +39,7 @@ makeConstructorGenerator constructor = do
   constructorType <- nameOf constructor
   appE (appTypeE (varE (mkName "tag")) (litT (strTyLit (show constructorTag)))) (conE constructorType)
 
--- | Remove the tag of a given constructor: fmap unTag g :: GenIO (Tag "t" SomeType) -> GenIO SomeType
+-- | Remove the tag of a given constructor: fmap unTag g :: Gen (Tag "t" SomeType) -> Gen SomeType
 untagGenerator :: Con -> ExpQ
 untagGenerator constructor = do
   constructorParam <- constructorParameterName constructor

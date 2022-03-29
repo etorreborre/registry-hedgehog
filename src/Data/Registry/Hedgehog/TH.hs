@@ -16,7 +16,7 @@ import Protolude
 --    <: genFun (tag @"permanent" Permanent)
 --    <: genFun (tag @"temporary" Temporary)
 --
--- genEmployeeStatus :: GenIO Chooser -> GenIO (Tag "permanent" EmployeeStatus) -> GenIO (Tag "temporary" EmployeeStatus) -> GenIO EmployeeStatus
+-- genEmployeeStatus :: Gen Chooser -> Gen (Tag "permanent" EmployeeStatus) -> Gen (Tag "temporary" EmployeeStatus) -> Gen EmployeeStatus
 -- genEmployeeStatus chooser g1 g2 = chooseOne chooser [fmap unTag1, fmap unTag g2]
 makeGenerators :: Name -> ExpQ
 makeGenerators genType = do

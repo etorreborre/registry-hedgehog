@@ -11,7 +11,6 @@ import Data.Registry
 import Data.Registry.Hedgehog
 import Data.Registry.Hedgehog.TH
 import Hedgehog.Gen as Gen hiding (print)
-import Hedgehog.Internal.Gen hiding (print)
 import Hedgehog.Range
 import Protolude hiding (list)
 import Test.Data.Registry.Company
@@ -19,7 +18,7 @@ import Test.Tasty.Hedgehogx
 
 registry =
   genFun Company
-    <: fun (listOf @Department)
+    <: fun (listOfMinMax @Department 1 5)
     <: genFun Department
     <: fun (listOf @Employee)
     <: genFun Employee
@@ -42,4 +41,4 @@ $(return [])
 
 -- | We create a forall function using all the generators
 forall :: forall a. _ => PropertyT IO a
-forall = withFrozenCallStack $ forAllT (genWith @a registry)
+forall = withFrozenCallStack $ forAll (genWith @a registry)

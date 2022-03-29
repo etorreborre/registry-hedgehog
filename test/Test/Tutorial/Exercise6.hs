@@ -7,7 +7,6 @@
 module Test.Tutorial.Exercise6 where
 
 import Data.Registry.Hedgehog
-import Data.Text as T
 import Hedgehog hiding (test)
 import Protolude
 import Test.Tasty.Hedgehogx
@@ -20,9 +19,6 @@ test_another_small_company = prop "make a small company" $
     setEmployeeName
     setDepartmentName
     setGenS @Int (pure 1)
-    setDistinctForS @Department @Text
 
     collect =<< forallS @Company
-
-    setCycleChooserS @EmployeeStatus
     collect =<< forallS @EmployeeStatus

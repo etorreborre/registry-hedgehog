@@ -21,7 +21,7 @@ registry =
     <: genFun Department
     <: fun (listOf @Employee)
     <: genFun Employee
-    <: genVal genEmployeeStatus
+    <: genFun genEmployeeStatus
     <: fun (maybeOf @Int)
     <: genVal genInt
     <: genVal genText
@@ -36,11 +36,11 @@ genEmployeeStatus :: Gen EmployeeStatus
 genEmployeeStatus = pure Permanent
 
 -- this compiles ok now
-makeCompanyGen :: GenIO Company
-makeCompanyGen = make @(GenIO Company) registry
+makeCompanyGen :: Gen Company
+makeCompanyGen = make @(Gen Company) registry
 
 forall :: forall a. (Typeable a, Show a) => PropertyT IO a
-forall = withFrozenCallStack $ forAllT $ genWith @a registry
+forall = withFrozenCallStack $ forAll $ genWith @a registry
 
 test_company = test "make a company" $ do
   _ <- forall @Company

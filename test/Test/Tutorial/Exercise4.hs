@@ -16,13 +16,13 @@ import Test.Tutorial.Exercise2 (genText)
 import Test.Tutorial.Exercise3 (registry3)
 
 registry12 :: Registry _ _
-registry12 = specializeGen @Department genDepartmentName $ registry3
+registry12 = specializeGen @Department genDepartmentName registry3
 
 genDepartmentName :: Gen Text
 genDepartmentName = T.take 5 . T.toUpper <$> genText
 
 forall :: forall a. (Typeable a, Show a) => PropertyT IO a
-forall = withFrozenCallStack $ forAllT $ genWith @a registry12
+forall = withFrozenCallStack $ forAll $ genWith @a registry12
 
 test_deparment_name = prop "make a department" $ do
   department <- forall @Department

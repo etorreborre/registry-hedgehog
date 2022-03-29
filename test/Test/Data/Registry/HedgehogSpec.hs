@@ -18,30 +18,6 @@ import Hedgehog.Internal.Seed as Seed (random)
 import Hedgehog.Internal.Tree as Tree (NodeT (..), runTreeT)
 import Hedgehog.Range
 import Protolude
-  ( Applicative (pure),
-    Bool (True),
-    Eq,
-    Foldable (length),
-    IO,
-    Int,
-    Maybe (Just, Nothing),
-    Monad ((>>)),
-    MonadIO (..),
-    MonadState (get, put),
-    Num ((+), (-)),
-    Ord ((<=), (>=)),
-    Show,
-    State,
-    Text,
-    evalState,
-    flip,
-    head,
-    lift,
-    panic,
-    ($),
-    (.),
-    (<$>),
-  )
 import System.IO.Unsafe
 import Test.Data.Registry.Company
 import Test.Data.Registry.Generators
@@ -89,7 +65,7 @@ test_company_1 =
   prop "a company can be used for testing" $ do
     -- note that we are using forall and not forAll
     company <- forall @Company
-    (length (departments company) >= 0) === True
+    (not . null) (departments company) === True
 
 -- Let's create some registry modifiers to constrain the generation
 setOneDepartment = addFunS $ listOfMinMax @Department 1 1
@@ -133,27 +109,18 @@ test_with_better_department_name = noShrink $
 
 --   across different constructors for a given data type
 
-test_cycle_constructors =
-  prop "we can cycle deterministically across all the constructors of a data type" $
+test_uniform_constructors =
+  prop "we can choose uniformly across all the constructors of a data type" $
     runS registry $ do
-      setCycleChooserS @EmployeeStatus
       -- uncomment to check
       -- collect =<< forallS @EmployeeStatus
-      success
-
--- We can also make sure we generate distinct values for a given type
-test_distinct_values =
-  prop "we can generate distinct values for a given data type when used in a specific context" $
-    runS registry $ do
-      setDistinctForS @Department @Text
-      -- uncomment to check
-      -- collect =<< departmentName <$> forallS @Department
       success
 
 test_ints_generator =
   prop "we can generate ints" $ do
     n <- forAllT distinctInt
-    n === n -- collect n
+    -- collect n
+    n === n
 
 test_fresh = minTestsOk 10000 $
   prop "we can generate terms with fresh ids" $ do
@@ -220,12 +187,12 @@ sampleGenIO gen =
    in loop (100 :: Int)
 
 {-# NOINLINE distinctInt #-}
-distinctInt :: GenIO Int
+distinctInt :: GenT IO Int
 distinctInt = unsafePerformIO $ do
   ref <- newIORef (0 :: Int)
   pure $ distinctIntGenerator ref
 
-distinctIntGenerator :: IORef Int -> GenIO Int
+distinctIntGenerator :: IORef Int -> GenT IO Int
 distinctIntGenerator ref = do
   i <- lift $ readIORef ref
   lift $ writeIORef ref (i + 1)
