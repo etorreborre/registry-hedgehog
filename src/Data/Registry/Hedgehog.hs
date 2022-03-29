@@ -14,11 +14,25 @@ module Data.Registry.Hedgehog
     specializeGen,
     tweakGen,
     makeNonEmpty,
+    genListOf,
+    genListOfMinMax,
+    genNonEmptyOfMinMax,
+    genNonEmptyOf,
+    genMaybeOf,
+    genOneOf,
+    genPairOf,
+    genTripleOf,
+    genTuple4Of,
+    setDistinctPairOf,
+    setDistinctTripleOf,
     -- combinators to compose different types of generators
+    distinctPairOf,
+    distinctTripleOf,
     eitherOf,
     hashMapOf,
     listOf,
     listOfMinMax,
+    nonEmptyOfMinMax,
     mapOf,
     maybeOf,
     nonEmptyMapOf,
@@ -37,7 +51,7 @@ module Data.Registry.Hedgehog
 where
 
 import Data.HashMap.Strict as HashMap (HashMap, fromList)
-import Data.List.NonEmpty hiding (cycle, nonEmpty, (!!))
+import Data.List.NonEmpty as NonEmpty hiding (cycle, nonEmpty, (!!))
 import Data.Map as Map (fromList)
 import Data.Maybe as Maybe
 import Data.Registry
@@ -75,6 +89,50 @@ setGen = tweak @(Gen a) . const
 -- | Specialize a generator in a given context
 specializeGen :: forall a b ins out. (Typeable a, Typeable b) => Gen b -> Registry ins out -> Registry ins out
 specializeGen = specialize @(Gen a) @(Gen b)
+
+-- | Add a generator for a list of elements
+genListOf :: forall a. (Typeable a) => Typed (Gen a -> Gen [a])
+genListOf = fun (listOf @a)
+
+-- | Add a generator for a bounded list of elements
+genListOfMinMax :: forall a. (Typeable a) => Int -> Int -> Typed (Gen a -> Gen [a])
+genListOfMinMax mn mx = fun (listOfMinMax @a mn mx)
+
+-- | Add a generator for a non-empty list of elements
+genNonEmptyOf :: forall a. (Typeable a) => Typed (Gen a -> Gen (NonEmpty a))
+genNonEmptyOf = fun (nonEmptyOf @a)
+
+-- | Add a generator for a bounded non-empty list of elements
+genNonEmptyOfMinMax :: forall a. (Typeable a) => Int -> Int -> Typed (Gen a -> Gen (NonEmpty a))
+genNonEmptyOfMinMax mn mx = fun (nonEmptyOfMinMax @a mn mx)
+
+-- | Add a generator for an optional element
+genMaybeOf :: forall a. (Typeable a) => Typed (Gen a -> Gen (Maybe a))
+genMaybeOf = fun (maybeOf @a)
+
+-- | Add a generator for a element picked from a list
+genOneOf :: (Typeable a, Show a) => [a] -> Typed (Gen a)
+genOneOf as = genVal (Gen.element as)
+
+-- | Add a generator for a pair of elements
+genPairOf :: forall a b. (Typeable a, Typeable b) => Typed (Gen a -> Gen b -> Gen (a, b))
+genPairOf = fun (pairOf @a @b)
+
+-- | Add a generator for a triple of elements
+genTripleOf :: forall a b c. (Typeable a, Typeable b, Typeable c) => Typed (Gen a -> Gen b -> Gen c -> Gen (a, b, c))
+genTripleOf = fun (tripleOf @a @b @c)
+
+-- | Add a generator for 4 elements
+genTuple4Of :: forall a b c d. (Typeable a, Typeable b, Typeable c, Typeable d) => Typed (Gen a -> Gen b -> Gen c -> Gen d -> Gen (a, b, c, d))
+genTuple4Of = fun (tuple4Of @a @b @c @d)
+
+-- | Add the generation of a pair of distinct elements
+setDistinctPairOf :: forall a. (Typeable a, Eq a) => Registry _ _ -> Registry _ _
+setDistinctPairOf r = fun (distinctPairOf @a) +: r
+
+-- | Add the generation of a triple of distinct elements
+setDistinctTripleOf :: forall a. (Typeable a, Eq a) => Registry _ _ -> Registry _ _
+setDistinctTripleOf r = fun (distinctTripleOf @a) +: r
 
 -- | Make sure there is always one element of a given type in a list of elements
 makeNonEmpty :: forall a ins out. (Typeable a) => Registry ins out -> Registry ins out
@@ -140,3 +198,15 @@ nonEmptyMapOf gk gv = do
   h <- pairOf gk gv
   t <- listOf (pairOf gk gv)
   pure (Map.fromList (h : t))
+
+-- | Make a generator for a non empty list of elements of a given type
+nonEmptyOfMinMax :: Int -> Int -> Gen a -> Gen (NonEmpty a)
+nonEmptyOfMinMax mi ma g = NonEmpty.fromList <$> listOfMinMax mi ma g
+
+-- | Make a generator for a pair of distinct values
+distinctPairOf :: forall a. (Eq a) => Gen a -> Gen (a, a)
+distinctPairOf genA = Gen.filterT (uncurry (/=)) $ (,) <$> genA <*> genA
+
+-- | Make a generator for a triple of distinct values
+distinctTripleOf :: forall a. (Eq a) => Gen a -> Gen (a, a, a)
+distinctTripleOf genA = Gen.filterT (\(a1, a2, a3) -> a1 /= a2 && a2 /= a3 && a1 /= a3) $ (,,) <$> genA <*> genA <*> genA
