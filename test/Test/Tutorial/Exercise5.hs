@@ -16,24 +16,28 @@ import Test.Tutorial.Exercise2 (genText)
 import Test.Tutorial.Exercise3 (registry3)
 import Test.Tutorial.Exercise4 (genDepartmentName)
 
-runGens = runS registry3
+test_small_company = prop "make a small company" $ do
+  company <- forallWith @Company (setSmallCompany . setEmployeeName . setDepartmentName)
+  collect company
 
 genEmployeeName :: Gen Text
 genEmployeeName = T.take 10 . T.toLower <$> genText
 
-setDepartmentName = specializeGenS @Department genDepartmentName
+setDepartmentName :: Registry _ _ -> Registry _ _
+setDepartmentName = specializeGen @Department genDepartmentName
 
-setEmployeeName = specializeGenS @Employee genEmployeeName
+setEmployeeName :: Registry _ _ -> Registry _ _
+setEmployeeName = specializeGen @Employee genEmployeeName
 
-setOneDepartment = addFunS $ listOfMinMax @Department 1 1
+setOneDepartment :: Registry _ _ -> Registry _ _
+setOneDepartment = addFun (listOfMinMax @Department 1 1)
 
-setOneEmployee = addFunS $ listOfMinMax @Employee 1 1
+setOneEmployee :: Registry _ _ -> Registry _ _
+setOneEmployee = addFun (listOfMinMax @Employee 1 1)
 
-setSmallCompany = setOneEmployee >> setOneDepartment
+setSmallCompany :: Registry _ _ -> Registry _ _
+setSmallCompany = setOneEmployee . setOneDepartment
 
-test_small_company = prop "make a small company" $
-  runGens $ do
-    setSmallCompany
-    setEmployeeName
-    setDepartmentName
-    collect =<< forallS @Company
+-- | Generate a value with a modified list of generators
+forallWith :: forall a b c. (HasCallStack, Show a, Typeable a) => (Registry _ _ -> Registry b c) -> PropertyT IO a
+forallWith f = withFrozenCallStack $ forAll $ genWith @a (f registry3)

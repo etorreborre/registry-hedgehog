@@ -7,23 +7,13 @@ module Data.Registry.Hedgehog
   ( -- creation / tweaking functions
     Gen,
     Chooser (..),
-    forallS,
-    forAllT, -- re-export of forAllT for convenience purpose since we are working in Gen
-    filterGenS,
     genFun,
     genVal,
     genWith,
-    modifyGenS,
     setGen,
-    setGenS,
-    setGenT,
     specializeGen,
-    specializeGenS,
-    specializeGenT,
     tweakGen,
-    tweakGenS,
     makeNonEmpty,
-    makeNonEmptyS,
     -- combinators to compose different types of generators
     eitherOf,
     hashMapOf,
@@ -56,7 +46,6 @@ import Data.Registry.Internal.Types
 import Data.Set as Set (fromList)
 import Hedgehog
 import Hedgehog.Gen as Gen
-import Hedgehog.Internal.Property (forAllT)
 import Hedgehog.Range
 import Protolude as P
 
@@ -79,48 +68,13 @@ genWith = make @(Gen a)
 tweakGen :: forall a ins out. (Typeable a) => (a -> a) -> Registry ins out -> Registry ins out
 tweakGen f = tweak @(Gen a) (f <$>)
 
--- | Modify the registry for a given generator in a State monad
-tweakGenS :: forall a m ins out. (Typeable a, MonadState (Registry ins out) m) => (a -> a) -> m ()
-tweakGenS f = modify (tweakGen f)
-
 -- | Set a specific generator on the registry the value of a generator in a given registry
 setGen :: forall a ins out. (Typeable a) => Gen a -> Registry ins out -> Registry ins out
 setGen = tweak @(Gen a) . const
 
--- | Set a specific generator on the registry the value of a generator in a given registry
-setGenT :: forall m a ins out. (Typeable a, Typeable m) => GenT m a -> Registry ins out -> Registry ins out
-setGenT = tweak @(GenT m a) . const
-
--- | Set a specific generator on the registry the value of a generator in a given registry in a State monad
-setGenS :: forall a m ins out. (Typeable a, MonadState (Registry ins out) m) => Gen a -> m ()
-setGenS genA = modify (setGen genA)
-
 -- | Specialize a generator in a given context
 specializeGen :: forall a b ins out. (Typeable a, Typeable b) => Gen b -> Registry ins out -> Registry ins out
 specializeGen = specialize @(Gen a) @(Gen b)
-
--- | Specialize a generator in a given context
-specializeGenT :: forall m a b ins out. (Typeable a, Typeable b, Typeable m) => GenT m b -> Registry ins out -> Registry ins out
-specializeGenT = specialize @(GenT m a) @(GenT m b)
-
--- | Specialize a generator in a given context
-specializeGenS :: forall a b m ins out. (Typeable a, Typeable b, MonadState (Registry ins out) m) => Gen b -> m ()
-specializeGenS g = modify (specializeGen @a @b g)
-
--- | Modify a generator
-modifyGenS :: forall a ins out. (Typeable a) => (Gen a -> Gen a) -> PropertyT (StateT (Registry ins out) IO) ()
-modifyGenS f = modify (tweak @(Gen a) f)
-
--- | Filter a generator
-filterGenS :: forall a ins out. (Typeable a) => (a -> Bool) -> PropertyT (StateT (Registry ins out) IO) ()
-filterGenS = modifyGenS . Gen.filterT
-
--- | Get a value generated from one of the generators in the registry and modify the registry
---   using a state monad
-forallS :: forall a m out. (Typeable a, Show a, MonadIO m) => PropertyT (StateT (Registry _ out) m) a
-forallS = do
-  r <- P.lift get
-  withFrozenCallStack $ forAll (genWith @a r)
 
 -- | Make sure there is always one element of a given type in a list of elements
 makeNonEmpty :: forall a ins out. (Typeable a) => Registry ins out -> Registry ins out
@@ -129,10 +83,6 @@ makeNonEmpty r =
   let genA = genWith @a r
    in -- add that element in front of a list of generated elements
       tweak @(Gen [a]) (\genAs -> (:) <$> genA <*> genAs) r
-
--- | Make sure there is always one element of a given type in a list of elements in a State monad
-makeNonEmptyS :: forall a m ins out. (Typeable a, MonadState (Registry ins out) m) => m ()
-makeNonEmptyS = modify (makeNonEmpty @a)
 
 -- * CONTAINERS COMBINATORS
 

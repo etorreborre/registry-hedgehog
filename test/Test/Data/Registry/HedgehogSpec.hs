@@ -7,7 +7,6 @@
 module Test.Data.Registry.HedgehogSpec where
 
 import Control.Monad.Morph (hoist)
-import Data.IORef
 import Data.Registry
 import Data.Registry.Hedgehog
 import qualified Data.Text as T
@@ -18,7 +17,6 @@ import Hedgehog.Internal.Seed as Seed (random)
 import Hedgehog.Internal.Tree as Tree (NodeT (..), runTreeT)
 import Hedgehog.Range
 import Protolude
-import System.IO.Unsafe
 import Test.Data.Registry.Company
 import Test.Data.Registry.Generators
 import Test.Tasty.Hedgehogx
@@ -68,20 +66,17 @@ test_company_1 =
     (not . null) (departments company) === True
 
 -- Let's create some registry modifiers to constrain the generation
-setOneDepartment = addFunS $ listOfMinMax @Department 1 1
+setOneDepartment = addFun $ listOfMinMax @Department 1 1
 
-setOneEmployee = addFunS $ listOfMinMax @Employee 1 1
+setOneEmployee = addFun $ listOfMinMax @Employee 1 1
 
-setSmallCompany = setOneEmployee >> setOneDepartment
+setSmallCompany = setOneEmployee . setOneDepartment
 
-test_small_company =
-  prop "a small company has just one department and one employee" $
-    runS registry $ do
-      setSmallCompany
-      company <- forallS @Company
-      length (departments company) === 1
-      let Just d = head $ departments company
-      length (employees d) === 1
+test_small_company = prop "a small company has just one department and one employee" $ do
+  company <- forallWith @Company setSmallCompany
+  length (departments company) === 1
+  let Just d = head $ departments company
+  length (employees d) === 1
 
 -- * We can also specialize some registry in a given context
 
@@ -91,36 +86,20 @@ test_small_company =
 
 genDepartmentName = T.take 5 . T.toUpper <$> genText
 
-setDepartmentName = specializeGenS @Department genDepartmentName
+setDepartmentName = specializeGen @Department genDepartmentName
 
-test_with_better_department_name = noShrink $
-  prop "a department must have a short capitalized name" $
-    runS registry $ do
-      setSmallCompany
-      setDepartmentName
-      company <- forallS @Company
+test_with_better_department_name = prop "a department must have a short capitalized name" $ do
+  company <- forallWith @Company (setSmallCompany . setDepartmentName)
+  -- uncomment to print the department names and inspect them
+  -- print company
+  let Just d = head $ departments company
+  (T.length (departmentName d) <= 5) === True
 
-      -- uncomment to print the department names and inspect them
-      -- print company
-      let Just d = head $ departments company
-      (T.length (departmentName d) <= 5) === True
+-- | Generate a value with a modified list of generators
+forallWith :: forall a b c. (HasCallStack, Show a, Typeable a) => (Registry _ _ -> Registry b c) -> PropertyT IO a
+forallWith f = withFrozenCallStack $ forAll $ genWith @a (f registry)
 
--- * It would be also very nice to have stateful generation where we can cycle
-
---   across different constructors for a given data type
-
-test_uniform_constructors =
-  prop "we can choose uniformly across all the constructors of a data type" $
-    runS registry $ do
-      -- uncomment to check
-      -- collect =<< forallS @EmployeeStatus
-      success
-
-test_ints_generator =
-  prop "we can generate ints" $ do
-    n <- forAllT distinctInt
-    -- collect n
-    n === n
+-- * Fresh identifiers using a state monad
 
 test_fresh = minTestsOk 10000 $
   prop "we can generate terms with fresh ids" $ do
@@ -185,15 +164,3 @@ sampleGenIO gen =
               Just a ->
                 pure a
    in loop (100 :: Int)
-
-{-# NOINLINE distinctInt #-}
-distinctInt :: GenT IO Int
-distinctInt = unsafePerformIO $ do
-  ref <- newIORef (0 :: Int)
-  pure $ distinctIntGenerator ref
-
-distinctIntGenerator :: IORef Int -> GenT IO Int
-distinctIntGenerator ref = do
-  i <- lift $ readIORef ref
-  lift $ writeIORef ref (i + 1)
-  pure i

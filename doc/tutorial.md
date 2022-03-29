@@ -21,7 +21,7 @@ ageEncoder intEncoder = Encoder (\Age n -> encode intEncoder n)
 The benefits are:
 
  - the construction of instance is still "type-directed" as with typeclasses, you can make an instance by specifying its type only, like `Encoder Age`
- - the construction can be altered by injecting some hand-crafted values in order to replace normal components with mocks for example
+ - the construction can be altered by injecting some hand-crafted values in order to replace regular instances with mocks for example
  - it is also possible to inject values in a specific context only, for example a specific `Encoder Int` used by the `Encoder Age` but not by the `Encoder Year`
 
 If you want to get a good mental picture of what a registry is, you can visualize:
@@ -119,12 +119,12 @@ To create a registry for generators
      - `genVal` to add a generator (like `genInt :: Gen Int` to generate integers)
      -  `<:` to append elements to the registry
 
-2. try to make a `GenIO Company` with `make @(GenIO Company) registry`. This should not compile because
+2. try to make a `Gen Company` with `make @(Gen Company) registry`. This should not compile because
    there are missing generators. You can still create an "unchecked" registry with `+:` instead of `<:`
 
 _Notes_:
 
- - `genFun` is an alias for `funTo @GenIO`. We are using `GenIO a`, which is an alias for `GenT IO a` instead of just `Gen a` (alias for `GenT Identity a`)
+ - `genFun` is an alias for `funTo @Gen`. We are using `Gen a`, which is an alias for `GenT IO a` instead of just `Gen a` (alias for `GenT Identity a`)
    to be able to support to stateful generators later on
  - you will need to import `Hedgehog`, `Hedgehog.Gen` and `Hedgehog.Range` to create `Int` and `Text` generators
  - `EmployeeStatus` is an ADT. For now only generate `Permanent` employees, we will see later how to deal with ADTs
@@ -139,7 +139,7 @@ We are missing generators for "relationships" like `[Employee]` or `Maybe Int`.
 import Test.Tasty.Hedgehogx
 
 forall :: forall a . (Typeable a, Show a) => PropertyT IO a
-forall = forAllT $ genWith @a registry
+forall = forAll $ genWith @a registry
 
 test_company = test "make a company" $ do
   collect =<< forall @Company
@@ -148,7 +148,7 @@ test_company = test "make a company" $ do
 
 _Notes_:
 
-  - `genWith @a` is a function making a `GenIO a` from a registry
+  - `genWith @a` is a function making a `Gen a` from a registry
   - `forall` is a helper function to avoid repeating the registry name in every test
   - `collect` is a Hedgehog function displaying the frequencies for generated values
 
@@ -156,7 +156,7 @@ _Notes_:
 
 We need to create a better generator for the `EmployeeStatus` ADT. The general pattern to do this with `registry` is to do the following:
 ```
-genEmployeeStatus :: GenIO (Tag "Permanent" EmployeeStatus) -> GenIO (Tag "Temporary" EmployeeStatus) -> GenIOEmployeeStatus
+genEmployeeStatus :: Gen (Tag "Permanent" EmployeeStatus) -> Gen (Tag "Temporary" EmployeeStatus) -> Gen EmployeeStatus
 genEmployeeStatus genPermanent genEmployeeStatus = choice [unTag <$> genPermanent, unTag genTemporary]
 
 registry =
@@ -178,7 +178,7 @@ test_employee_status = prop "make an employee status" $ do
 _Notes_:
 
  - there are other useful functions in Hedgehog to check the coverage: `classify` and `cover`
- - the `makeGenerators` TemplateHaskell function provides additional functionality with the ability to "cycle" across constructors instead of randomly selecting one (see Exercise 14)
+ - the `makeGenerators` TemplateHaskell function provides additional functionality with the ability to control which constructors are selected (see Exercise 14)
 
 ### Exercise 4
 
@@ -190,7 +190,7 @@ For example let's generate some department names with only 5 upper-case letters.
 genDepartmentName = T.take 5 . T.toUpper <$> genText
 ```
 
-2. specialize the registry `@(GenIO Department)` to use that generator instead of the default one
+2. specialize the registry `@(Gen Department)` to use that generator instead of the default one
 ```
 registry' = specializeGen @Department registry
 ```
@@ -206,59 +206,41 @@ _Notes_: how would you do this with QuickCheck `Arbitrary` typeclass?
 
 ### Exercise 5
 
-In real tests we might have to specialize the generation in many places, for example to generate only companies with 1 department, or with just one employee per department, with certain name or status, and so on. This means that we need to modify the registry several times. In order to do this we can use a `State` monad and take advantage that a `Hedgehog` property is actually a `PropertyT` monad transformer.
+In real tests we might have to specialize the generation in many places, for example to generate only companies with 1 department,
+or with just one employee per department, with certain name or status, and so on.
 
-1. create a function `setDepartmentName` to set a specific generator for department names. This uses `specializeGenS` to create a `PropertyT (StateT (Registry _ _) IO ())`
+1. create a function `setDepartmentName` to set a specific generator for department names. This uses `specializeGen` to create a `PropertyT IO ()`
 ```
-setDepartmentName = specializeGenS @Department genDepartmentName
-```
-
-2. use the `addFunS` and `listOfMinMax` functions to add new functions in the registry to limit the generation of lists of departments and employees
-```
-setOneDepartment = addFunS $ listOfMinMax @Department 1 1
-setOneEmployee   = addFunS $ listOfMinMax @Employee 1 1
+setDepartmentName = specializeGen @Department genDepartmentName
 ```
 
-3. Since those functions are returning a `PropertyT StateT ...` they can be composed with `>>`. Do this to create a "small company"
+2. use the `addFun` and `listOfMinMax` functions to add new functions in the registry to limit the generation of lists of departments and employees
 ```
-setSmallCompany = setOneEmployee >> setOneDepartment
+setOneDepartment = addFun (listOfMinMax @Department 1 1)
+setOneEmployee = addFun (listOfMinMax @Employee 1 1)
+```
+
+3. Since those functions modifying a registry they can be composed with . Do this to create a "small company"
+```
+setSmallCompany = setOneEmployee . setOneDepartment
 ```
 
 4. Now write a property to check the generated companies
 ```
-test_small_company = prop "make a small company" $ runS registry $ do
-  setSmallCompany
-  setDepartmentName
-  collect =<< forallS @Company
+test_small_company = prop "make a small company" $ do
+  company <- forallWith @Company (setSmallCompany . setDepartmentName)
+  collect company
 ```
 
-`runS` is a helper function to run a stateful `Property (StateT Registry) IO ()` property and make it a normal Hedgehog property `PropertyT IO ()`.
+`forallWith` is a helper function to modify the existing registry before calling a generator:
+```
+-- | Generate a value with a modified list of generators
+forallWith :: forall a b c. (HasCallStack, Show a, Typeable a) => (Registry _ _ -> Registry b c) -> PropertyT IO a
+forallWith f = withFrozenCallStack $ forAll $ genWith @a (f registry3)
+```
 
-You should noticed something that doesn't look good. We have specialized the `Text` generation for everything "under" `Department`, including the employee name. Can you fix this and use this generator instead for employee names?
+You should notice something that doesn't look good. We have specialized the `Text` generation for everything "under" `Department`, including the employee name. Can you fix this and use this generator instead for employee names?
 ```
 genEmployeeName :: Gen Text
 genEmployeeName = T.take 10 . T.toLower <$> genText
-```
-
-_Notes_:
-
-  - the `S` in the `registry-hedgehog` combinators `specializeGenS`, `addFunS`, ... signifies that we are using a `State` monad
-
-### Exercise 6
-
-We can now be a bit more fancy tweak our generation a bit more, try to generate data with the following modifications (use the `collect` function to visualize generated values):
-
-1. force the generator for `Int` to always return `1`
-```
-setGenS @Int (pure 1)
-```
-
-2. "cycle" the constructors of `EmployeeStatus`
-```
-setCycleChooserS @EmployeeStatus
-```
-
-3. make sure the department names are all distinct
-```
-setDistinctForS @Department @Text
 ```
