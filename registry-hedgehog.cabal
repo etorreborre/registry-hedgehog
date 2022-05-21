@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6a7d709328017b52e337399c103ca4bb6188933c06bdd3cb5e3e608bae7f2c38
+-- hash: a80c02532509f28abbb98896582e06adf5292368eac375ffda75cac41fbdb195
 
 name:           registry-hedgehog
-version:        0.6.0.0
+version:        0.7.0.0
 synopsis:       utilities to work with Hedgehog generators and `registry`
 description:    This library provides some functions to extract generators from a "Registry" and make stateful modifications of that Registry to precisely control the generation of data
 category:       Control
@@ -62,13 +62,13 @@ library
       TypeOperators
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -fno-warn-partial-type-signatures -optP-Wno-nonportable-include-path -Wincomplete-uni-patterns
   build-depends:
-      base >=4.7 && <5
+      base >=4.14 && <5
     , containers >=0.2 && <1
     , hedgehog >=1.0 && <2
     , mmorph ==1.*
     , multimap ==1.*
     , protolude ==0.3.*
-    , registry ==0.2.*
+    , registry >=0.2 && <0.4
     , tasty ==1.*
     , tasty-discover >=2 && <5
     , tasty-hedgehog >=1.0 && <2.0
@@ -127,13 +127,13 @@ test-suite spec
       TypeOperators
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -fno-warn-partial-type-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-incomplete-uni-patterns -fno-warn-type-defaults -optP-Wno-nonportable-include-path
   build-depends:
-      base >=4.7 && <5
+      base >=4.14 && <5
     , containers >=0.2 && <1
     , hedgehog >=1.0 && <2
     , mmorph ==1.*
     , multimap ==1.*
     , protolude ==0.3.*
-    , registry ==0.2.*
+    , registry >=0.2 && <0.4
     , registry-hedgehog
     , tasty ==1.*
     , tasty-discover >=2 && <5

@@ -65,7 +65,7 @@ import Prelude (String)
 prop :: HasCallStack => TestName -> PropertyT IO () -> TestTree
 prop name p =
   let aModuleName = getModuleName
-   in withFrozenCallStack . localOption (ModuleName (toS aModuleName)) $
+   in withFrozenCallStack $ localOption (ModuleName (toS aModuleName)) $
         testProperty name (Hedgehog.property p)
 
 -- | Create a Tasty test from a Hedgehog property called only once

@@ -3,10 +3,28 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: registry-0.3.0.5@sha256:5235f08067c18269fe276ce7a2bc52d59fd1f347b1ad7459be498dd08fc17d3b,5833
+    pantry-tree:
+      size: 3982
+      sha256: 25bb5d1315ff5040e11f11c4a884696faee21442db5db3d9b8ff240f830c9911
+  original:
+    hackage: registry-0.3.0.5
+- completed:
+    name: protolude
+    version: 0.3.1
+    git: https://github.com/protolude/protolude
+    pantry-tree:
+      size: 3146
+      sha256: 685ed0191298da9540e772ffa746eb078d4f4a77ed8012a9933d3c79644b1054
+    commit: 3e249724fd0ead27370c8c297b1ecd38f92cbd5b
+  original:
+    git: https://github.com/protolude/protolude
+    commit: 3e249724fd0ead27370c8c297b1ecd38f92cbd5b
 snapshots:
 - completed:
-    size: 586296
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/18.yaml
-    sha256: 63539429076b7ebbab6daa7656cfb079393bf644971156dc349d7c0453694ac2
-  original: lts-18.18
+    size: 618876
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/6.yaml
+    sha256: fb634b19f31da06684bb07ce02a20c75a3162138f279b388905b03ebd57bb50f
+  original: lts-19.6
