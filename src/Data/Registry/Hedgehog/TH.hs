@@ -22,12 +22,18 @@ makeGenerators :: Name -> ExpQ
 makeGenerators genType = do
   info <- reify genType
   case info of
+    TyConI (NewtypeD _context _name _typeVars _kind constructor _deriving) -> do
+      constructorType <- nameOf constructor
+      app (genFunOf (conE constructorType)) (varE (mkName "emptyRegistry"))
+    TyConI (DataD _context _name _typeVars _kind [constructor] _deriving) -> do
+      constructorType <- nameOf constructor
+      app (genFunOf (conE constructorType)) (varE (mkName "emptyRegistry"))
     TyConI (DataD _context name _typeVars _kind constructors _deriving) -> do
       selector <- makeSelectGenerator name constructors
       generators <- traverse makeConstructorGenerator constructors
       assembleGeneratorsToRegistry selector generators
     other -> do
-      qReport True ("can only create generators for an ADT, got: " <> show other)
+      qReport True ("can not create generators for this kind of data type at the moment. Got: " <> show other)
       fail "generators creation failed"
 
 emptyRegistry :: Registry '[] '[]

@@ -93,7 +93,7 @@ test_with_better_department_name = prop "a department must have a short capitali
   -- uncomment to print the department names and inspect them
   -- print company
   let Just d = head $ departments company
-  (T.length (departmentName d) <= 5) === True
+  (T.length (_departmentName $ departmentName d) <= 5) === True
 
 -- | Generate a value with a modified list of generators
 forallWith :: forall a b c. (HasCallStack, Show a, Typeable a) => (Registry _ _ -> Registry b c) -> PropertyT IO a

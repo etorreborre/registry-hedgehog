@@ -10,17 +10,23 @@ data Company = Company
   deriving (Eq, Show)
 
 data Department = Department
-  { departmentName :: Text,
+  { departmentName :: DepartmentName,
     employees :: [Employee]
   }
   deriving (Eq, Show)
 
+newtype DepartmentName = DepartmentName { _departmentName :: Text }
+  deriving (Eq, Show)
+
 data Employee = Employee
-  { employeeName :: Text,
+  { employeeName :: EmployeeName,
     employeeStatus :: EmployeeStatus,
     salary :: Int,
     bonus :: Maybe Int
   }
+  deriving (Eq, Show)
+
+newtype EmployeeName = EmployeeName Text
   deriving (Eq, Show)
 
 -- | Note that this is an ADT with several constructors

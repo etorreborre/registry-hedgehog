@@ -21,9 +21,11 @@ registry =
     <: fun (listOfMinMax @Department 1 5)
     <: genFun Department
     <: fun (listOf @Employee)
-    <: genFun Employee
-    -- we can generate data for different constructors in an ADT with some Template Haskell
+    -- we can generate data for constructors of various types
+    <: $(makeGenerators ''Employee)
     <: $(makeGenerators ''EmployeeStatus)
+    <: $(makeGenerators ''DepartmentName)
+    <: $(makeGenerators ''EmployeeName)
     <: fun (maybeOf @Int)
     -- we can generate Lists or Maybe of elements
     <: genVal genInt
