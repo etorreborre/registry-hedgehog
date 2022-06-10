@@ -5,12 +5,19 @@
 
 packages:
 - completed:
-    hackage: registry-0.3.0.5@sha256:5235f08067c18269fe276ce7a2bc52d59fd1f347b1ad7459be498dd08fc17d3b,5833
+    hackage: protolude-0.3.1@sha256:1cc9e5a5c26c33a43c52b554443dd9779fef13974eaa0beec7ca6d2551b400da,2647
+    pantry-tree:
+      size: 1645
+      sha256: 6452a6ca8d395f7d810139779bb0fd16fc1dbb00f1862630bc08ef5a100430f9
+  original:
+    hackage: protolude-0.3.1
+- completed:
+    hackage: registry-0.3.0.7@sha256:3fc3177c886e929f82bae44abb67743bbca3d971971e1df272f2734efb1892ed,5833
     pantry-tree:
       size: 3982
-      sha256: 25bb5d1315ff5040e11f11c4a884696faee21442db5db3d9b8ff240f830c9911
+      sha256: 2a745b0445175731b9c6b045202e9db1ff403cb36780ff035a37ea2faae53d11
   original:
-    hackage: registry-0.3.0.5
+    hackage: registry-0.3.0.7
 - completed:
     hackage: tasty-1.4.2.3@sha256:5c861bf8954d9e775769d3cfb13f55922839de3d1243dd4418505fdd0e05619a,2690
     pantry-tree:
@@ -18,17 +25,6 @@ packages:
       sha256: 63b12965b20cb3e2f839e5c53f12b62f24fb0261f541d52e6c3e740d4f8f51f0
   original:
     hackage: tasty-1.4.2.3
-- completed:
-    name: protolude
-    version: 0.3.1
-    git: https://github.com/protolude/protolude
-    pantry-tree:
-      size: 3146
-      sha256: 685ed0191298da9540e772ffa746eb078d4f4a77ed8012a9933d3c79644b1054
-    commit: 3e249724fd0ead27370c8c297b1ecd38f92cbd5b
-  original:
-    git: https://github.com/protolude/protolude
-    commit: 3e249724fd0ead27370c8c297b1ecd38f92cbd5b
 snapshots:
 - completed:
     size: 618876
