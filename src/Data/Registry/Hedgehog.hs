@@ -23,6 +23,9 @@ module Data.Registry.Hedgehog
     genPairOf,
     genTripleOf,
     genTuple4Of,
+    genMapOf,
+    genNonEmptyMapOf,
+    genHashMapOf,
     setDistinctPairOf,
     setDistinctTripleOf,
     -- combinators to compose different types of generators
@@ -125,6 +128,18 @@ genTripleOf = fun (tripleOf @a @b @c)
 -- | Add a generator for 4 elements
 genTuple4Of :: forall a b c d. (Typeable a, Typeable b, Typeable c, Typeable d) => Typed (Gen a -> Gen b -> Gen c -> Gen d -> Gen (a, b, c, d))
 genTuple4Of = fun (tuple4Of @a @b @c @d)
+
+-- | Add a generator for a map of elements
+genMapOf :: forall k v. (Ord k, Typeable k, Typeable v) => Typed (Gen k -> Gen v -> Gen (Map k v))
+genMapOf = fun (mapOf @k @v)
+
+-- | Add a generator for a non empty map of elements
+genNonEmptyMapOf :: forall k v. (Ord k, Typeable k, Typeable v) => Typed (Gen k -> Gen v -> Gen (Map k v))
+genNonEmptyMapOf = fun (nonEmptyMapOf @k @v)
+
+-- | Add a generator for a hashmap of elements
+genHashMapOf :: forall k v. (Ord k, Hashable k, Typeable k, Typeable v) => Typed (Gen k -> Gen v -> Gen (HashMap k v))
+genHashMapOf = fun (hashMapOf @k @v)
 
 -- | Add the generation of a pair of distinct elements
 setDistinctPairOf :: forall a. (Typeable a, Eq a) => Registry _ _ -> Registry _ _
