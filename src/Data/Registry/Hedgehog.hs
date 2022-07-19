@@ -42,6 +42,7 @@ module Data.Registry.Hedgehog
     nonEmptyOf,
     pairOf,
     setOf,
+    setOfMinMax,
     tripleOf,
     tuple4Of,
     tuple5Of,
@@ -54,6 +55,7 @@ module Data.Registry.Hedgehog
 where
 
 import Data.HashMap.Strict as HashMap (HashMap, fromList)
+import qualified Data.List as L
 import Data.List.NonEmpty as NonEmpty hiding (cycle, nonEmpty, (!!))
 import Data.Map as Map (fromList)
 import Data.Maybe as Maybe
@@ -198,6 +200,11 @@ eitherOf genA genB = choice [Left <$> genA, Right <$> genB]
 -- | Create a default generator for a small set of elements
 setOf :: forall a. (Ord a) => Gen a -> Gen (Set a)
 setOf = fmap Set.fromList . listOf
+
+-- | Create a default generator for a set with a minimum and a maximum number of elements
+--   The implementation uses Gen.filter to make sure that the elements are unique
+setOfMinMax :: forall a. (Ord a) => Int -> Int -> Gen a -> Gen (Set a)
+setOfMinMax mi mx = fmap Set.fromList . Gen.filter (\as -> L.nub as == as) . listOfMinMax @a mi mx
 
 -- | Create a default generator for map of key/values
 mapOf :: forall k v. (Ord k) => Gen k -> Gen v -> Gen (Map k v)
