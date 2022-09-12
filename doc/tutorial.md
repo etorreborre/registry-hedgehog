@@ -4,13 +4,13 @@
 
 [registry](http://github.com/etorreborre/registry) is a library offering an alternative to typeclasses for implicitly assembling functionalities in Haskell.
 For example a typeclass for an `Encoder` will implicitly retrieve other `Encoder`s and use them to build a new one:
-```
+```haskell
 instance (Encoder Int) => Encode Age where
   encode (Age n) = encode n
 ```
 
 This can also be written "manually" as a function call:
-```
+```haskell
 newtype Encoder a = Encode { encode :: a -> Text }
 
 ageEncoder :: Encoder Int -> Encoder Age
@@ -79,7 +79,7 @@ In the following exercises we will learn to:
 ### Our first registry for generators
 
 We are going to create generators for the following data model (see `test/Test/Tutorial/DataModel.hs`)
-```
+```haskell
 data Company = Company {
   companyName :: Text
 , departments :: [Department]
@@ -104,7 +104,7 @@ data EmployeeStatus =
 ```
 
 One first step could be to write Hedgehog generators manually:
-```
+```haskell
 genEmployee :: Gen Text -> Gen EmployeeStatus -> Gen Int -> Gen (Maybe Int) -> Gen Employee
 ```
 
@@ -135,7 +135,7 @@ We are missing generators for "relationships" like `[Employee]` or `Maybe Int`.
 
 1. add them using the `listOf @a` and `maybeOf @a` functions
 2. great, we can now write our first Hedgehog property!
-```
+```haskell
 import Test.Tasty.Hedgehogx
 
 forall :: forall a . (Typeable a, Show a) => PropertyT IO a
@@ -155,7 +155,7 @@ _Notes_:
 ### Exercise 3
 
 We need to create a better generator for the `EmployeeStatus` ADT. The general pattern to do this with `registry` is to do the following:
-```
+```haskell
 genEmployeeStatus :: Gen (Tag "Permanent" EmployeeStatus) -> Gen (Tag "Temporary" EmployeeStatus) -> Gen EmployeeStatus
 genEmployeeStatus genPermanent genEmployeeStatus = choice [unTag <$> genPermanent, unTag genTemporary]
 
@@ -170,7 +170,7 @@ Since this is some repetitive code, this has been automated with TemplateHaskell
 
 1. use the `$(makeGenerators ''EmployeeStatus)` function to add a better `EmployeeStatus` generator to the registry (you can add it on top of the previous registry)
 2. run the following property to check the generation of `EmployeeStatus`
-```
+```haskell
 test_employee_status = prop "make an employee status" $ do
   collect =<< forall @EmployeeStatus
 ```
@@ -186,17 +186,17 @@ Since we are using a registry to make our generators we can now override generat
 For example let's generate some department names with only 5 upper-case letters.
 
 1. create a better `Text` generator for department names
-```
+```haskell
 genDepartmentName = T.take 5 . T.toUpper <$> genText
 ```
 
 2. specialize the registry `@(Gen Department)` to use that generator instead of the default one
-```
+```haskell
 registry' = specializeGen @Department registry
 ```
 
 3. run the following property to check department names
-```
+```haskell
 test_department_name = prop "make a department" $ do
   department <- forall @Department
   collect (departmentName department)
@@ -210,37 +210,37 @@ In real tests we might have to specialize the generation in many places, for exa
 or with just one employee per department, with certain name or status, and so on.
 
 1. create a function `setDepartmentName` to set a specific generator for department names. This uses `specializeGen` to create a `PropertyT IO ()`
-```
+```haskell
 setDepartmentName = specializeGen @Department genDepartmentName
 ```
 
 2. use the `addFun` and `listOfMinMax` functions to add new functions in the registry to limit the generation of lists of departments and employees
-```
+```haskell
 setOneDepartment = addFun (listOfMinMax @Department 1 1)
 setOneEmployee = addFun (listOfMinMax @Employee 1 1)
 ```
 
 3. Since those functions modifying a registry they can be composed with . Do this to create a "small company"
-```
+```haskell
 setSmallCompany = setOneEmployee . setOneDepartment
 ```
 
 4. Now write a property to check the generated companies
-```
+```haskell
 test_small_company = prop "make a small company" $ do
   company <- forallWith @Company (setSmallCompany . setDepartmentName)
   collect company
 ```
 
 `forallWith` is a helper function to modify the existing registry before calling a generator:
-```
+```haskell
 -- | Generate a value with a modified list of generators
 forallWith :: forall a b c. (HasCallStack, Show a, Typeable a) => (Registry _ _ -> Registry b c) -> PropertyT IO a
 forallWith f = withFrozenCallStack $ forAll $ genWith @a (f registry3)
 ```
 
 You should notice something that doesn't look good. We have specialized the `Text` generation for everything "under" `Department`, including the employee name. Can you fix this and use this generator instead for employee names?
-```
+```haskell
 genEmployeeName :: Gen Text
 genEmployeeName = T.take 10 . T.toLower <$> genText
 ```
