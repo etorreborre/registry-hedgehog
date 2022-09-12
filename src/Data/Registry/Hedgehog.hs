@@ -61,7 +61,6 @@ import Data.Map as Map (fromList)
 import Data.Maybe as Maybe
 import Data.Registry
 import Data.Registry.Internal.Hedgehog
-import Data.Registry.Internal.Types
 import Data.Set as Set (fromList)
 import Hedgehog
 import Hedgehog.Gen as Gen
