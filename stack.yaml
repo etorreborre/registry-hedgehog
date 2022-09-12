@@ -5,7 +5,7 @@ packages:
 
 extra-deps:
   - protolude-0.3.1
-  - registry-0.3.0.7
+  - registry-0.3.2.1
   - tasty-1.4.2.3
 
 flags: {}

@@ -7,6 +7,7 @@ module Test.Tutorial.Exercise5 where
 
 import Data.Registry
 import Data.Registry.Hedgehog
+import Data.Registry.State
 import Data.Text as T
 import Hedgehog hiding (test)
 import Protolude

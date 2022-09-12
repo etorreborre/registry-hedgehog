@@ -12,12 +12,12 @@ packages:
   original:
     hackage: protolude-0.3.1
 - completed:
-    hackage: registry-0.3.0.7@sha256:3fc3177c886e929f82bae44abb67743bbca3d971971e1df272f2734efb1892ed,5833
+    hackage: registry-0.3.2.1@sha256:2846e1dff8c628e2fed24cce2592abb25df54ce73e3143fe7dbfabfe0f6d5bb4,5833
     pantry-tree:
       size: 3982
-      sha256: 2a745b0445175731b9c6b045202e9db1ff403cb36780ff035a37ea2faae53d11
+      sha256: 9c00d5a72007be5020d3f45edf1276ff7f22d20fad5b8060c00891ed5a2f7c72
   original:
-    hackage: registry-0.3.0.7
+    hackage: registry-0.3.2.1
 - completed:
     hackage: tasty-1.4.2.3@sha256:5c861bf8954d9e775769d3cfb13f55922839de3d1243dd4418505fdd0e05619a,2690
     pantry-tree:

@@ -9,6 +9,7 @@ module Test.Data.Registry.HedgehogSpec where
 import Control.Monad.Morph (hoist)
 import Data.Registry
 import Data.Registry.Hedgehog
+import Data.Registry.State
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Hedgehog.Gen as Gen
