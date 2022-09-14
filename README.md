@@ -1,4 +1,4 @@
-# `registry-hedgehog`
+# `registry-hedgehog` [![Hackage](https://img.shields.io/hackage/v/registry-hedgehog.svg)](https://hackage.haskell.org/package/registry-hedgehog) [![Build Status](https://github.com/etorreborre/registry-hedgehog/workflows/ci/badge.svg)](https://github.com/etorreborre/registry-hedgehog/actions)
 
 ##### *It's functions all the way down* <img src="doc/images/unboxed-bottomup.jpg" border="0"/>
 
