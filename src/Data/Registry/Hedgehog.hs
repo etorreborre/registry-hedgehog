@@ -27,10 +27,14 @@ module Data.Registry.Hedgehog
     genNonEmptyMapOf,
     genHashMapOf,
     setDistinctPairOf,
+    setDistinctPairOfOn,
     setDistinctTripleOf,
+    setDistinctTripleOfOn,
     -- combinators to compose different types of generators
     distinctPairOf,
+    distinctPairOfOn,
     distinctTripleOf,
+    distinctTripleOfOn,
     eitherOf,
     hashMapOf,
     listOf,
@@ -146,9 +150,17 @@ genHashMapOf = fun (hashMapOf @k @v)
 setDistinctPairOf :: forall a. (Typeable a, Eq a) => Registry _ _ -> Registry _ _
 setDistinctPairOf r = fun (distinctPairOf @a) +: r
 
+-- | Add the generation of a pair of distinct elements, according to one of their part
+setDistinctPairOfOn :: forall a b. (Typeable a, Eq b) => (a -> b) -> Registry _ _ -> Registry _ _
+setDistinctPairOfOn f r = fun (distinctPairOfOn @a f) +: r
+
 -- | Add the generation of a triple of distinct elements
 setDistinctTripleOf :: forall a. (Typeable a, Eq a) => Registry _ _ -> Registry _ _
 setDistinctTripleOf r = fun (distinctTripleOf @a) +: r
+
+-- | Add the generation of a triple of distinct elements, according to one of their part
+setDistinctTripleOfOn :: forall a b. (Typeable a, Eq b) => (a -> b) -> Registry _ _ -> Registry _ _
+setDistinctTripleOfOn f r = fun (distinctTripleOfOn @a f) +: r
 
 -- | Make sure there is always one element of a given type in a list of elements
 makeNonEmpty :: forall a ins out. (Typeable a) => Registry ins out -> Registry ins out
@@ -226,8 +238,16 @@ nonEmptyOfMinMax mi ma g = NonEmpty.fromList <$> listOfMinMax mi ma g
 
 -- | Make a generator for a pair of distinct values
 distinctPairOf :: forall a. (Eq a) => Gen a -> Gen (a, a)
-distinctPairOf genA = Gen.filterT (uncurry (/=)) $ (,) <$> genA <*> genA
+distinctPairOf = distinctPairOfOn identity
+
+-- | Make a generator for a pair of distinct values according to one of their part
+distinctPairOfOn :: forall a b. (Eq b) => (a -> b) -> Gen a -> Gen (a, a)
+distinctPairOfOn f genA = Gen.filterT (\(a1, a2) -> f a1 /= f a2) $ (,) <$> genA <*> genA
 
 -- | Make a generator for a triple of distinct values
 distinctTripleOf :: forall a. (Eq a) => Gen a -> Gen (a, a, a)
-distinctTripleOf genA = Gen.filterT (\(a1, a2, a3) -> a1 /= a2 && a2 /= a3 && a1 /= a3) $ (,,) <$> genA <*> genA <*> genA
+distinctTripleOf = distinctTripleOfOn identity
+
+-- | Make a generator for a triple of distinct values according to one of their part
+distinctTripleOfOn :: forall a b. (Eq b) => (a -> b) -> Gen a -> Gen (a, a, a)
+distinctTripleOfOn f genA = Gen.filterT (\(a1, a2, a3) -> f a1 /= f a2 && f a2 /= f a3 && f a1 /= f a3) $ (,,) <$> genA <*> genA <*> genA
