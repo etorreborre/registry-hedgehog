@@ -26,7 +26,7 @@ registry =
     <: $(makeGenerators ''EmployeeStatus)
     <: $(makeGenerators ''DepartmentName)
     <: $(makeGenerators ''EmployeeName)
-    <: fun (maybeOf @Int)
+    <: genMaybeOf @Int
     -- we can generate Lists or Maybe of elements
     <: genVal genInt
     <: genVal genText

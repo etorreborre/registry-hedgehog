@@ -16,7 +16,14 @@ import Test.Tutorial.DataModel
 import Test.Tutorial.Exercise2 (registry)
 
 registry3 :: Registry _ _
-registry3 = $(makeGenerators ''EmployeeStatus) <: registry
+registry3 =
+  $(makeGenerators ''EmployeeStatus)
+    <: registry
+
+registry3Unchecked :: Registry _ _
+registry3Unchecked =
+  $(makeGeneratorsUnchecked ''EmployeeStatus)
+    <: registry
 
 forall :: forall a. (Typeable a, Show a) => PropertyT IO a
 forall = withFrozenCallStack $ forAll $ genWith @a registry3

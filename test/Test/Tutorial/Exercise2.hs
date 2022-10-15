@@ -22,7 +22,7 @@ registry =
     <: fun (listOf @Employee)
     <: genFun Employee
     <: genFun genEmployeeStatus
-    <: fun (maybeOf @Int)
+    <: genMaybeOf @Int
     <: genVal genInt
     <: genVal genText
 

@@ -13,6 +13,18 @@ import Language.Haskell.TH.Syntax
 import Protolude hiding (Type)
 import Prelude (last)
 
+-- | Options for changing the generated TH code
+--    if checked = True then we use the <: operator which checks input
+--    otherwise we use the <+ operator which doesn't check inputs
+newtype GeneratorOptions = GeneratorOptions
+  { checked :: Bool
+  }
+  deriving (Eq, Show)
+
+-- | By default we want to typecheck the generators
+defaultGeneratorOptions :: GeneratorOptions
+defaultGeneratorOptions = GeneratorOptions True
+
 -- | Create a generator for selecting between constructors of an ADT
 --   One parameter is a Gen Chooser in order to be able to later on
 --   switch the selection strategy
@@ -82,20 +94,22 @@ typesOf other = do
 -- | runQ [| fun g +: genFun e +: genFun f|]
 --   InfixE (Just (AppE (VarE Data.Registry.Registry.fun) (UnboundVarE g))) (VarE +:) (Just (InfixE (Just (AppE (VarE Data.Registry.Hedgehog.genFun) (UnboundVarE e)))
 --  (VarE Data.Registry.Registry.+:) (Just (AppE (VarE Data.Registry.Hedgehog.genFun) (UnboundVarE f)))))
-assembleGeneratorsToRegistry :: Exp -> [Exp] -> ExpQ
-assembleGeneratorsToRegistry _ [] =
-  fail "generators creation failed"
-assembleGeneratorsToRegistry selectorGenerator [g] =
-  app (genFunOf (pure g)) $
-    app (funOf (pure selectorGenerator)) $
-      app (genFunOf (varE (mkName "choiceChooser"))) (varE (mkName "emptyRegistry"))
---
-assembleGeneratorsToRegistry selectorGenerator (g : gs) =
-  app (genFunOf (pure g)) (assembleGeneratorsToRegistry selectorGenerator gs)
+assembleGeneratorsToRegistry :: GeneratorOptions -> Exp -> [Exp] -> ExpQ
+assembleGeneratorsToRegistry options selectorGenerator generators =
+  app options (funOf (pure selectorGenerator)) $
+    app options (genFunOf (varE (mkName "choiceChooser"))) $
+      go generators
+  where
+    go [] = fail "generators creation failed"
+    go [g] = genFunOf (pure g)
+    go (g:gs) =
+      app options (genFunOf (pure g)) $
+        go gs
 
-app :: ExpQ -> ExpQ -> ExpQ
-app e1 e2 =
-  infixE (Just e1) (varE (mkName "+:")) (Just e2)
+app :: GeneratorOptions -> ExpQ -> ExpQ -> ExpQ
+app options e1 e2 = do
+  let op = if checked options then "<:" else "<+"
+  infixE (Just e1) (varE (mkName op)) (Just e2)
 
 genFunOf :: ExpQ -> ExpQ
 genFunOf = appE (varE (mkName "genFun"))

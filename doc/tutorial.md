@@ -120,7 +120,7 @@ To create a registry for generators
      -  `<:` to append elements to the registry
 
 2. try to make a `Gen Company` with `make @(Gen Company) registry`. This should not compile because
-   there are missing generators. You can still create an "unchecked" registry with `+:` instead of `<:`
+   there are missing generators. You can still create an "unchecked" registry with `<+` instead of `<:`
 
 _Notes_:
 
@@ -178,7 +178,8 @@ test_employee_status = prop "make an employee status" $ do
 _Notes_:
 
  - there are other useful functions in Hedgehog to check the coverage: `classify` and `cover`
- - the `makeGenerators` TemplateHaskell function provides additional functionality with the ability to control which constructors are selected (see Exercise 14)
+ - the `makeGenerators` TemplateHaskell function provides additional functionality with the ability to control which constructors are selected
+ - there is an additional `makeGeneratorsUnchecked` function which uses the `<+` operator instead of `<:` in order to reduce the compilation times if necessary
 
 ### Exercise 4
 
