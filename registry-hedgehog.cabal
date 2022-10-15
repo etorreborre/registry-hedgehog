@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 29a868dc039a970090bd05581cec4d8187649633592a37a6b46357fbebfbd416
+-- hash: 6507ac5c7059bc022b2cad2faa557a32b1ed204586dcf512efe171e1e61d5a49
 
 name:           registry-hedgehog
-version:        0.7.0.6
+version:        0.7.1.0
 synopsis:       utilities to work with Hedgehog generators and `registry`
 description:    This library provides some functions to extract generators from a "Registry" and make stateful modifications of that Registry to precisely control the generation of data
 category:       Control
@@ -33,33 +33,17 @@ library
   hs-source-dirs:
       src
   default-extensions:
-      BangPatterns
       DefaultSignatures
-      EmptyCase
-      ExistentialQuantification
-      FlexibleContexts
-      FlexibleInstances
       FunctionalDependencies
       GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
       LambdaCase
-      MultiParamTypeClasses
       MultiWayIf
-      NamedFieldPuns
       NoImplicitPrelude
       OverloadedStrings
       PatternSynonyms
-      Rank2Types
-      RankNTypes
-      ScopedTypeVariables
-      StandaloneDeriving
-      TupleSections
-      TypeApplications
+      StrictData
       TypeFamilies
       TypeFamilyDependencies
-      TypeOperators
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -fno-warn-partial-type-signatures -optP-Wno-nonportable-include-path -Wincomplete-uni-patterns
   build-depends:
       base >=4.14 && <5
@@ -78,7 +62,7 @@ library
     , transformers >=0.5 && <2
     , universum ==1.*
     , unordered-containers >=0.1 && <1
-  default-language: Haskell2010
+  default-language: GHC2021
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -98,33 +82,17 @@ test-suite spec
   hs-source-dirs:
       test
   default-extensions:
-      BangPatterns
       DefaultSignatures
-      EmptyCase
-      ExistentialQuantification
-      FlexibleContexts
-      FlexibleInstances
       FunctionalDependencies
       GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
       LambdaCase
-      MultiParamTypeClasses
       MultiWayIf
-      NamedFieldPuns
       NoImplicitPrelude
       OverloadedStrings
       PatternSynonyms
-      Rank2Types
-      RankNTypes
-      ScopedTypeVariables
-      StandaloneDeriving
-      TupleSections
-      TypeApplications
+      StrictData
       TypeFamilies
       TypeFamilyDependencies
-      TypeOperators
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -fno-warn-partial-type-signatures -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-incomplete-uni-patterns -fno-warn-type-defaults -optP-Wno-nonportable-include-path
   build-depends:
       base >=4.14 && <5
@@ -144,4 +112,4 @@ test-suite spec
     , transformers >=0.5 && <2
     , universum ==1.*
     , unordered-containers >=0.1 && <1
-  default-language: Haskell2010
+  default-language: GHC2021
