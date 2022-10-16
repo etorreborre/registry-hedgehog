@@ -95,7 +95,7 @@ setGen :: forall a ins out. (Typeable a) => Gen a -> Registry ins out -> Registr
 setGen = tweak @(Gen a) . const
 
 -- | Specialize a generator in a given context
-specializeGen :: forall a b ins out. (Typeable a, Typeable b) => Gen b -> Registry ins out -> Registry ins out
+specializeGen :: forall (a :: Type) b ins out. (Typeable a, Typeable b) => Gen b -> Registry ins out -> Registry ins out
 specializeGen = specialize @(Gen a) @(Gen b)
 
 -- | Add a generator for a list of elements
@@ -163,7 +163,7 @@ setDistinctTripleOfOn :: forall a b. (Typeable a, Eq b) => (a -> b) -> Registry 
 setDistinctTripleOfOn f r = fun (distinctTripleOfOn @a f) +: r
 
 -- | Make sure there is always one element of a given type in a list of elements
-makeNonEmpty :: forall a ins out. (Typeable a) => Registry ins out -> Registry ins out
+makeNonEmpty :: forall (a :: Type) ins out. (Typeable a) => Registry ins out -> Registry ins out
 makeNonEmpty r =
   -- extract a generator for one element only
   let genA = genWith @a r

@@ -5,29 +5,15 @@
 
 packages:
 - completed:
-    hackage: protolude-0.3.1@sha256:1cc9e5a5c26c33a43c52b554443dd9779fef13974eaa0beec7ca6d2551b400da,2647
+    hackage: registry-0.3.3.3@sha256:97b95f4822a35d06f9893bc961c5fab8413a269963d5a2d4a50e198c58344cea,5057
     pantry-tree:
-      size: 1645
-      sha256: 6452a6ca8d395f7d810139779bb0fd16fc1dbb00f1862630bc08ef5a100430f9
-  original:
-    hackage: protolude-0.3.1
-- completed:
-    hackage: registry-0.3.2.1@sha256:2846e1dff8c628e2fed24cce2592abb25df54ce73e3143fe7dbfabfe0f6d5bb4,5833
-    pantry-tree:
+      sha256: a6c5080a5032e9d82a273b3acafe53d55d9f8f41b0cd35e084b45ca3bd1c6378
       size: 3982
-      sha256: 9c00d5a72007be5020d3f45edf1276ff7f22d20fad5b8060c00891ed5a2f7c72
   original:
-    hackage: registry-0.3.2.1
-- completed:
-    hackage: tasty-1.4.2.3@sha256:5c861bf8954d9e775769d3cfb13f55922839de3d1243dd4418505fdd0e05619a,2690
-    pantry-tree:
-      size: 1944
-      sha256: 63b12965b20cb3e2f839e5c53f12b62f24fb0261f541d52e6c3e740d4f8f51f0
-  original:
-    hackage: tasty-1.4.2.3
+    hackage: registry-0.3.3.3
 snapshots:
 - completed:
-    size: 618876
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/6.yaml
-    sha256: fb634b19f31da06684bb07ce02a20c75a3162138f279b388905b03ebd57bb50f
-  original: lts-19.6
+    sha256: 3f8b2c49f068dd80cbd988d987db06f5ae928dee88e32f1fe84e90f9c9186a43
+    size: 643193
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/9/29.yaml
+  original: nightly-2022-09-29
