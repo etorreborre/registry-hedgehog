@@ -4,6 +4,7 @@ packages:
   - '.'
 
 extra-deps:
+  - registry-0.3.3.3
 
 flags: {}
 
