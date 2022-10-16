@@ -24,10 +24,10 @@ makeGenerators genType = do
   case info of
     TyConI (NewtypeD _context _name _typeVars _kind constructor _deriving) -> do
       constructorType <- nameOf constructor
-      app (genFunOf (conE constructorType)) (varE (mkName "emptyRegistry"))
+      genFunOf (conE constructorType)
     TyConI (DataD _context _name _typeVars _kind [constructor] _deriving) -> do
       constructorType <- nameOf constructor
-      app (genFunOf (conE constructorType)) (varE (mkName "emptyRegistry"))
+      genFunOf (conE constructorType)
     TyConI (DataD _context name _typeVars _kind constructors _deriving) -> do
       selector <- makeSelectGenerator name constructors
       generators <- traverse makeConstructorGenerator constructors

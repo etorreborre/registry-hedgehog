@@ -83,19 +83,21 @@ typesOf other = do
 --   InfixE (Just (AppE (VarE Data.Registry.Registry.fun) (UnboundVarE g))) (VarE +:) (Just (InfixE (Just (AppE (VarE Data.Registry.Hedgehog.genFun) (UnboundVarE e)))
 --  (VarE Data.Registry.Registry.+:) (Just (AppE (VarE Data.Registry.Hedgehog.genFun) (UnboundVarE f)))))
 assembleGeneratorsToRegistry :: Exp -> [Exp] -> ExpQ
-assembleGeneratorsToRegistry _ [] =
-  fail "generators creation failed"
-assembleGeneratorsToRegistry selectorGenerator [g] =
-  app (genFunOf (pure g)) $
-    app (funOf (pure selectorGenerator)) $
-      app (genFunOf (varE (mkName "choiceChooser"))) (varE (mkName "emptyRegistry"))
---
-assembleGeneratorsToRegistry selectorGenerator (g : gs) =
-  app (genFunOf (pure g)) (assembleGeneratorsToRegistry selectorGenerator gs)
+assembleGeneratorsToRegistry selectorGenerator gens =
+  app (funOf (pure selectorGenerator)) $
+    app (genFunOf (varE (mkName "choiceChooser"))) $
+      go gens
+  where
+    go [] = fail "generators creation failed"
+    go [g] = genFunOf (pure g)
+    go (g:gs) =
+      app (genFunOf $ pure g) (go gs)
+
+
 
 app :: ExpQ -> ExpQ -> ExpQ
 app e1 e2 =
-  infixE (Just e1) (varE (mkName "+:")) (Just e2)
+  infixE (Just e1) (varE (mkName "<+")) (Just e2)
 
 genFunOf :: ExpQ -> ExpQ
 genFunOf = appE (varE (mkName "genFun"))
