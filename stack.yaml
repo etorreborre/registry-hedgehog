@@ -1,11 +1,11 @@
-resolver: nightly-2022-09-29
+resolver: lts-20.1
 
 packages:
   - '.'
 
 extra-deps:
-  - registry-0.3.3.3
-  
+  - registry-0.4.0.0
+
 flags: {}
 
 extra-package-dbs: []

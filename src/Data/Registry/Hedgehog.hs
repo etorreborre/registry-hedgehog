@@ -96,7 +96,7 @@ setGen = tweak @(Gen a) . const
 
 -- | Specialize a generator in a given context
 specializeGen :: forall (a :: Type) b ins out. (Typeable a, Typeable b) => Gen b -> Registry ins out -> Registry ins out
-specializeGen = specialize @(Gen a) @(Gen b)
+specializeGen g = specialize @(Gen a) @(Gen b) (fun g)
 
 -- | Add a generator for a list of elements
 genListOf :: forall a. (Typeable a) => Typed (Gen a -> Gen [a])

@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2bfe939d8ce493f2e69d9924c0319a069110da1a4cfad251f46bcd81ee5b25a0
+-- hash: 65c1280eeb35adad6cc554972b941d6413be6f40dd7875f98069e60a99462ac8
 
 name:           registry-hedgehog
-version:        0.7.2.0
+version:        0.8.0.0
 synopsis:       utilities to work with Hedgehog generators and `registry`
 description:    This library provides some functions to extract generators from a "Registry" and make stateful modifications of that Registry to precisely control the generation of data
 category:       Control
@@ -52,7 +52,7 @@ library
     , mmorph ==1.*
     , multimap ==1.*
     , protolude ==0.3.*
-    , registry >=0.2 && <0.4
+    , registry >=0.4 && <1
     , tasty ==1.*
     , tasty-discover >=2 && <5
     , tasty-hedgehog >=1.0 && <2.0
@@ -101,7 +101,7 @@ test-suite spec
     , mmorph ==1.*
     , multimap ==1.*
     , protolude ==0.3.*
-    , registry >=0.2 && <0.4
+    , registry >=0.4 && <1
     , registry-hedgehog
     , tasty ==1.*
     , tasty-discover >=2 && <5
