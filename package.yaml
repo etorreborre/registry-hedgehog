@@ -1,5 +1,5 @@
 name: registry-hedgehog
-version: 0.8.0.0
+version: 0.8.1.0
 synopsis: utilities to work with Hedgehog generators and `registry`
 
 description: This library provides some functions to extract generators from a "Registry" and
@@ -47,11 +47,11 @@ dependencies:
   - protolude            >= 0.3   && < 0.4
   - registry             >= 0.4   && < 1
   - tasty                >= 1     && < 2
-  - tasty-discover       >= 2     && < 5
+  - tasty-discover       >= 2     && < 6
   - tasty-hedgehog       >= 1.0   && < 2.0
   - tasty-th             >= 0.1   && < 1
   - template-haskell     >= 2.13  && < 3.0
-  - text                 >= 1     && < 2
+  - text                 >= 1     && < 3
   - transformers         >= 0.5   && < 2
   - universum            >= 1     && < 2
   - unordered-containers >= 0.1   && < 1

@@ -42,7 +42,7 @@ import GHC.Stack
 import Hedgehog hiding (test)
 import Hedgehog.Gen as Hedgehog hiding (discard, print)
 import Hedgehog.Internal.Config (UseColor (EnableColor))
-import Hedgehog.Internal.Property (Coverage (..), Diff (..), DiscardCount (..), ShrinkCount (..), TestCount (..))
+import Hedgehog.Internal.Property (Coverage (..), Diff (..), DiscardCount (..), ShrinkCount (..), ShrinkPath (..), TestCount (..))
 import Hedgehog.Internal.Report
 import Hedgehog.Internal.Show (mkValue, valueDiff)
 import Protolude hiding (SrcLoc, empty, toList, (.&.))
@@ -103,8 +103,8 @@ gotException a = withFrozenCallStack $ do
 
 printDifference :: (MonadIO m, Show a, Show b, HasCallStack) => a -> b -> m ()
 printDifference actual expected = withFrozenCallStack $ do
-  let failureReport = mkFailure (Size 0) (Seed 0 0) (ShrinkCount 0) Nothing Nothing "" (failureDifference actual expected) []
-  report <- renderResult EnableColor Nothing (Report (TestCount 0) (DiscardCount 0) (Coverage mempty) (Failed failureReport))
+  let failureReport = mkFailure (ShrinkCount 0) (ShrinkPath []) Nothing Nothing "" (failureDifference actual expected) []
+  report <- renderResult EnableColor Nothing (Report (TestCount 0) (DiscardCount 0) (Coverage mempty) (Seed 0 0) (Failed failureReport))
   putText (T.unlines . drop 3 . T.lines . toS $ report)
 
 failureDifference :: (Show a, Show b, HasCallStack) => a -> b -> Maybe Diff

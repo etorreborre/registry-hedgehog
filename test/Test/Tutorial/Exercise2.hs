@@ -7,7 +7,7 @@ module Test.Tutorial.Exercise2 where
 
 import Data.Registry
 import Data.Registry.Hedgehog
-import Hedgehog hiding (test, (===))
+import Hedgehog hiding (test, (===), forAll)
 import Hedgehog.Gen
 import Hedgehog.Range
 import Protolude
@@ -39,9 +39,9 @@ genEmployeeStatus = pure Permanent
 makeCompanyGen :: Gen Company
 makeCompanyGen = make @(Gen Company) registry
 
-forall :: forall a. (Typeable a, Show a) => PropertyT IO a
-forall = withFrozenCallStack $ forAll $ genWith @a registry
+forSome :: forall a. (Typeable a, Show a) => PropertyT IO a
+forSome = withFrozenCallStack $ forAll $ genWith @a registry
 
 test_company = test "make a company" $ do
-  _ <- forall @Company
+  _ <- forSome @Company
   success

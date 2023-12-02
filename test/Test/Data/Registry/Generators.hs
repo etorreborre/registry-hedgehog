@@ -41,6 +41,6 @@ genText = text (linear 1 10) alpha
 -- See the gory details of why this is necessary: https://gitlab.haskell.org/ghc/ghc/issues/9813
 $(return [])
 
--- | We create a forall function using all the generators
-forall :: forall a. _ => PropertyT IO a
-forall = withFrozenCallStack $ forAll (genWith @a registry)
+-- | We create a forSome function using all the generators
+forSome :: forall a. _ => PropertyT IO a
+forSome = withFrozenCallStack $ forAll (genWith @a registry)

@@ -79,6 +79,7 @@ instance Tasty.IsTest HedgehogTest where
             (fromMaybe (propertyShrinkLimit pConfig) mShrinks)
             (fromMaybe (propertyShrinkRetries pConfig) mRetries)
             (NoConfidenceTermination $ fromMaybe (propertyTestLimit pConfig) mTests)
+            Nothing
     randSeed <- Seed.random
     -- if we just run one test we choose a high size (knowing that the max size is 99)
     -- if the test fails we can turn it to a prop and let the shrinking process find a
@@ -98,7 +99,7 @@ reportToProgress ::
   PropertyConfig ->
   Report Hedgehog.Progress ->
   Tasty.Progress
-reportToProgress config (Report testsDone _ _ status) =
+reportToProgress config (Report testsDone _ _ _ status) =
   let TestLimit testLimit = propertyTestLimit config
       ShrinkLimit shrinkLimit = propertyShrinkLimit config
       ratio x y = 1.0 * fromIntegral x / fromIntegral y
@@ -118,14 +119,14 @@ reportOutput ::
 reportOutput (HedgehogShowReplay showReplay) useColor name report = do
   s <- renderResult useColor (Just (PropertyName name)) report
   pure $ case reportStatus report of
-    Failed fr ->
-      let size = failureSize fr
-          seed = failureSeed fr
+    Failed _ ->
+      let seed = reportSeed report
+          skip = SkipToTest (reportTests report)
           replayStr =
             if showReplay
               then
                 "  --hedgehog-replay \""
-                  ++ show size
+                  ++ show (skipCompress skip)
                   ++ " "
                   ++ show seed
                   ++ "\""

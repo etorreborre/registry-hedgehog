@@ -63,7 +63,7 @@ test_a_property_with_a_seed = withSeed "(Size 51) (Seed 35539461314630919 502910
 test_company_1 =
   prop "a company can be used for testing" $ do
     -- note that we are using forall and not forAll
-    company <- forall @Company
+    company <- forSome @Company
     (not . null) (departments company) === True
 
 -- Let's create some registry modifiers to constrain the generation
@@ -74,7 +74,7 @@ setOneEmployee = addFun $ listOfMinMax @Employee 1 1
 setSmallCompany = setOneEmployee . setOneDepartment
 
 test_small_company = prop "a small company has just one department and one employee" $ do
-  company <- forallWith @Company setSmallCompany
+  company <- forSomeWith @Company setSmallCompany
   length (departments company) === 1
   let Just d = head $ departments company
   length (employees d) === 1
@@ -90,15 +90,15 @@ genDepartmentName = T.take 5 . T.toUpper <$> genText
 setDepartmentName = specializeGen @Department genDepartmentName
 
 test_with_better_department_name = prop "a department must have a short capitalized name" $ do
-  company <- forallWith @Company (setSmallCompany . setDepartmentName)
+  company <- forSomeWith @Company (setSmallCompany . setDepartmentName)
   -- uncomment to print the department names and inspect them
   -- print company
   let Just d = head $ departments company
   (T.length (_departmentName $ departmentName d) <= 5) === True
 
 -- | Generate a value with a modified list of generators
-forallWith :: forall a b c. (HasCallStack, Show a, Typeable a) => (Registry _ _ -> Registry b c) -> PropertyT IO a
-forallWith f = withFrozenCallStack $ forAll $ genWith @a (f registry)
+forSomeWith :: forall a b c. (HasCallStack, Show a, Typeable a) => (Registry _ _ -> Registry b c) -> PropertyT IO a
+forSomeWith f = withFrozenCallStack $ forAll $ genWith @a (f registry)
 
 -- * Fresh identifiers using a state monad
 

@@ -138,18 +138,18 @@ We are missing generators for "relationships" like `[Employee]` or `Maybe Int`.
 ```haskell
 import Test.Tasty.Hedgehogx
 
-forall :: forall a . (Typeable a, Show a) => PropertyT IO a
-forall = forAll $ genWith @a registry
+forSome :: forall a . (Typeable a, Show a) => PropertyT IO a
+forSome = forAll $ genWith @a registry
 
 test_company = test "make a company" $ do
-  collect =<< forall @Company
+  collect =<< forSome @Company
 ```
 3. run the property in the repl with `run test_company`
 
 _Notes_:
 
   - `genWith @a` is a function making a `Gen a` from a registry
-  - `forall` is a helper function to avoid repeating the registry name in every test
+  - `forSome` is a helper function to avoid repeating the registry name in every test
   - `collect` is a Hedgehog function displaying the frequencies for generated values
 
 ### Exercise 3
