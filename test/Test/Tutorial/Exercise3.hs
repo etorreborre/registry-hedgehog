@@ -20,9 +20,9 @@ registry3 =
   $(makeGenerators ''EmployeeStatus)
     <: registry
 
-forall :: forall a. (Typeable a, Show a) => PropertyT IO a
-forall = withFrozenCallStack $ forAll $ genWith @a registry3
+for_all :: forall a. (Typeable a, Show a) => PropertyT IO a
+for_all = withFrozenCallStack $ forAll $ genWith @a registry3
 
 test_employee_status = prop "make an employee status" $ do
-  status <- forall @EmployeeStatus
+  status <- for_all @EmployeeStatus
   collect status

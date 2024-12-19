@@ -121,7 +121,7 @@ reportOutput (HedgehogShowReplay showReplay) useColor name report = do
   pure $ case reportStatus report of
     Failed _ ->
       let seed = reportSeed report
-          skip = SkipToTest (reportTests report)
+          skip = SkipToTest (reportTests report) (reportDiscards report)
           replayStr =
             if showReplay
               then
