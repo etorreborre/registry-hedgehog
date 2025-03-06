@@ -7,7 +7,7 @@ cabal-version: 1.12
 -- hash: 8f91154bd5dc81b34d27c5e31a8ec2b694b29bcb0c68cc3e3844cd8494f6b8f3
 
 name:           registry-hedgehog
-version:        0.8.2.0
+version:        0.8.2.1
 synopsis:       utilities to work with Hedgehog generators and `registry`
 description:    This library provides some functions to extract generators from a "Registry" and make stateful modifications of that Registry to precisely control the generation of data
 category:       Control
